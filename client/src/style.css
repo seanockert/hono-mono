@@ -1,0 +1,147 @@
+:root {
+  --color-bg: #fff;
+  --color-gradient: #efe3fd;
+  --color-link: #1c46a0;
+  --color-text: #444;
+  --color-error: #b3332e;
+  --size-base: 0.75rem;
+  --size-half: 0.375rem;
+  --size-quarter: 0.1875rem;
+  --size-2x: 1.5rem;
+  --size-4x: 3rem;
+
+  font-family: sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  overflow-wrap: break-word;
+}
+
+html {
+  background: var(--color-bg)
+    linear-gradient(var(--color-gradient), transparent 3rem);
+  padding: 0.75rem;
+  color: var(--color-text);
+}
+
+body {
+  color: inherit;
+  font-family: sans-serif;
+  line-height: 1.5;
+  margin: 1.5rem auto;
+  max-width: 50rem;
+  min-height: 100vh;
+  text-wrap: balance;
+}
+
+a {
+  color: var(--color-link);
+}
+
+input, textarea, button, select {
+  padding: var(--size-half);
+  font: inherit;
+  max-width: 20rem;
+  border-radius: var(--size-half);
+}
+
+button {
+  background: var(--color-link);
+  border-radius: var(--size-half);
+  border: none;
+  color: var(--color-bg);
+  cursor: pointer;
+  font-weight: bold;
+  padding: var(--size-half) var(--size-base);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: var(--color-error);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #191420;
+    --color-gradient: #594b6c;
+    --color-link: #6287d9;
+    --color-text: #e6e6e6;
+  }
+}
+
+
+/* Inline and Stack layout */
+[class^='inline'],
+[class*=' inline'],
+[class^='stack'],
+[class*=' stack'] {
+  --gap: var(--size-base);
+  display: flex;
+  gap: var(--gap);
+}
+
+ul[class] {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+[class^='inline'],
+[class*=' inline'] {
+  align-items: center;
+  justify-content: flex-start;
+}
+
+[class^='stack'],
+[class*=' stack'] {
+  flex-direction: column;
+}
+
+[class^='inline'] > [class^='stack'] {
+  flex: 1;
+}
+
+.inline-zero,
+.stack-zero {
+  display: inline-flex;
+  gap: 0;
+}
+
+.inline-quarter,
+.stack-quarter {
+  --gap: var(--size-quarter);
+}
+
+.inline-half,
+.stack-half {
+  --gap: var(--size-half);
+}
+
+.inline-2x,
+.stack-2x {
+  --gap: var(--size-2x);
+}
+
+.inline-4x,
+.stack-4x {
+  --gap: var(--size-4x);
+}
+
+.inline-between {
+  justify-content: space-between;
+}

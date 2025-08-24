@@ -1,0 +1,17 @@
+{
+  "name": "Hono Auth",
+  "short_name": "Hono Auth",
+  "description": "Hono with Auth",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
