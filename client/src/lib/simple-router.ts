@@ -1,6 +1,10 @@
 import { ref, computed } from 'vue'
 
-// Route configuration - easy to extend
+/**
+ * Basic client router for demo purposes. Replace with a more robust router.
+ */
+
+// Route configuration
 const routes = {
   '/': 'login',
   '/signup': 'signup',
@@ -21,7 +25,7 @@ const updateRoute = () => {
   currentRoute.value = getRouteFromPath()
 }
 
-// Initialize and listen for changes
+// Init and listen for changes
 currentRoute.value = getRouteFromPath()
 window.addEventListener('popstate', updateRoute)
 

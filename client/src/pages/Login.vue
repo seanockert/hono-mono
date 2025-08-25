@@ -10,14 +10,16 @@
         {{ errorMessage }}
       </div>
 
-      <div class="stack-half">
+      <div class="stack-quarter">
         <label for="email">Email</label>
         <input type="email" autofocus v-model="email" required />
       </div>
-      <div class="stack-half">
+
+      <div class="stack-quarter">
         <label for="password">Password</label>
         <input type="password" v-model="password" required />
       </div>
+
       <button type="submit" :disabled="isPending || isLoggingIn">
         {{ isLoggingIn ? 'Logging in...' : 'Login' }}
       </button>
@@ -37,13 +39,12 @@ const session = computed(() => sessionData.value.data);
 const isPending = computed(() => sessionData.value.isPending);
 const { route, navigate } = useRouter();
 
-// Form state
 const email = ref('');
 const password = ref('');
 const errorMessage = ref('');
 const isLoggingIn = ref(false);
 
-// Navigate to dashboard when user logs in
+// Redirect to dashboard when user logs in
 watchEffect(() => {
   if (session.value && route.value !== 'dashboard') {
     navigate('dashboard');
@@ -59,8 +60,6 @@ watch([email, password], () => {
 
 const handleLogin = async (e: Event) => {
   e.preventDefault();
-
-  // Clear previous errors and set loading state
   errorMessage.value = '';
   isLoggingIn.value = true;
 
@@ -71,7 +70,6 @@ const handleLogin = async (e: Event) => {
     });
 
     if (result.error) {
-      // Handle better-auth specific errors
       handleAuthError(result.error);
     }
   } catch (error: any) {

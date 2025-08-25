@@ -1,7 +1,7 @@
 {
-  "name": "Hono Auth",
-  "short_name": "Hono Auth",
-  "description": "Hono with Auth",
+  "name": "Hono Mono Client",
+  "short_name": "Hono Mono Client",
+  "description": "Hono Mono Client",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",

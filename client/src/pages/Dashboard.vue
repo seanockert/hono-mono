@@ -1,24 +1,74 @@
 <template>
-  <div class="stack">
-    <h1>Dashboard</h1>
-    <div v-if="!session">No session</div>
-    <div v-else class="stack-half">
-      <div><strong>Name:</strong> {{ session.user.name }}</div>
-      <div><strong>Email:</strong> {{ session.user.email }}</div>
-      <div><strong>User ID:</strong> {{ session.user.id }}</div>
+  <div class="stack-2x">
+    <header class="inline-between">
+      <h1>Dashboard</h1>
       <button @click="handleSignOut">Sign Out</button>
-    </div>
+    </header>
+
+    <main class="stack">
+      <div v-if="!session">No session</div>
+      <div v-else class="stack-half">
+        <div class="inline">
+          <strong>Name:</strong>
+          <div class="inline-quarter">
+            <input v-model="newName" type="text" :placeholder="session.user.name" :disabled="isUpdating" />
+            <button @click="handleUpdateName">&rarr;</button>
+          </div>
+
+          <div v-if="updateMessage">{{ updateMessage }}</div>
+        </div>
+
+        <div class="inline"><strong>Email:</strong> {{ session.user.email }}</div>
+        <div class="inline"><strong>User ID:</strong> {{ session.user.id }}</div>
+      </div>
+    </main>
+
+    <AuthTest />
   </div>
 </template>
 
 <script setup lang="ts">
 import { authClient } from '../lib/auth-client';
 import { useRouter } from '../lib/simple-router';
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+import AuthTest from '../components/AuthTest.vue';
 
 const sessionData = authClient.useSession();
 const session = computed(() => sessionData.value.data);
 const { navigate } = useRouter();
+
+const newName = ref(session.value?.user.name || '');
+const isUpdating = ref(false);
+const updateMessage = ref('');
+
+const handleUpdateName = async () => {
+  if (!newName.value.trim()) {
+    return;
+  }
+
+  isUpdating.value = true;
+  updateMessage.value = '';
+
+  try {
+    const result = await authClient.updateUser({
+      name: newName.value.trim(),
+    });
+
+    if (result.error) {
+      updateMessage.value = result.error.message || 'Failed to update name';
+    } else {
+      updateMessage.value = 'Updated!';
+
+      setTimeout(() => {
+        updateMessage.value = '';
+      }, 3000);
+    }
+  } catch (error) {
+    updateMessage.value = 'Failed to update name. Please try again.';
+  } finally {
+    isUpdating.value = false;
+  }
+};
 
 const handleSignOut = async () => {
   await authClient.signOut();

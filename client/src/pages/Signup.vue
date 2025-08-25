@@ -7,24 +7,28 @@
         {{ errorMessage }}
       </div>
 
-      <div class="stack-half">
+      <div class="stack-quarter">
         <label for="name">Name</label>
-        <input type="text" id="name" autofocus v-model="name" required />
+        <input type="text" id="name" autofocus maxlength="50" minlength="2" v-model="name" required />
       </div>
-      <div class="stack-half">
+
+      <div class="stack-quarter">
         <label for="email">Email</label>
         <input type="email" id="email" v-model="email" required />
       </div>
-      <div class="stack-half">
+
+      <div class="stack-quarter">
         <label for="password">Password</label>
-        <input type="password" id="password" v-model="password" required />
+        <input type="password" id="password" maxlength="50" minlength="8" v-model="password" required />
       </div>
-      <button type="submit" :disabled="isPending || isSigningUp">
+
+      <button type="submit" :disabled="isSigningUp">
         {{ isSigningUp ? 'Creating account...' : 'Sign Up' }}
       </button>
-      <!-- <button type="button" @click="handleGithubSignup">Sign up with GitHub</button> -->
     </form>
-    <a href="/login">Back to Login</a>
+
+    <!-- <button type="button" @click="handleGithubSignup">Sign up with GitHub</button> -->
+    <a href="/login">&larr; Back to Login</a>
   </div>
 </template>
 
@@ -33,7 +37,6 @@ import { ref, watch } from 'vue';
 import { authClient } from '../lib/auth-client';
 import { getErrorMessage } from '../lib/auth-errors';
 
-// Form state
 const email = ref('');
 const password = ref('');
 const name = ref('');
@@ -50,7 +53,6 @@ watch([email, password, name], () => {
 const handleSubmit = async (e: Event) => {
   e.preventDefault();
 
-  // Clear previous errors and set loading state
   errorMessage.value = '';
   isSigningUp.value = true;
 
@@ -62,7 +64,6 @@ const handleSubmit = async (e: Event) => {
     });
 
     if (result.error) {
-      // Handle better-auth specific errors
       handleAuthError(result.error);
     }
   } catch (error: any) {

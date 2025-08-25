@@ -9,9 +9,33 @@ app.use(cors({
   credentials: true,
 }));
 
-// For auth routes, use the auth handler
+// Use the auth handler for auth routes
 app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
+// Authenticated API endpoint
+app.get('/api/protected', async (c) => {
+  try {
+    // Validate the token and retrieve the session using raw headers
+    const session = await auth.api.getSession({ 
+      headers: c.req.raw.headers 
+    });
+
+    if (!session) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    // Return success message with user info
+    return c.json({ 
+      message: 'Authentication successful!', 
+      user: session.user,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
+});
+
+// Test route
 app.get('/', (c) => c.text('Hello App!'));
 
 export default app;
