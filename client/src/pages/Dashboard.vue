@@ -1,7 +1,7 @@
 <template>
   <div class="stack-2x">
     <header class="inline-between">
-      <h1>Dashboard</h1>
+      <h1>Hola {{ session?.user.name }}</h1>
       <button @click="handleSignOut">Sign Out</button>
     </header>
 
@@ -10,10 +10,10 @@
       <div v-else class="stack-half">
         <div class="inline">
           <strong>Name:</strong>
-          <div class="inline-quarter">
+          <form class="inline-quarter" @submit="handleUpdateName">
             <input v-model="newName" type="text" :placeholder="session.user.name" :disabled="isUpdating" />
-            <button @click="handleUpdateName">&rarr;</button>
-          </div>
+            <button type="submit">&rarr;</button>
+          </form>
 
           <div v-if="updateMessage">{{ updateMessage }}</div>
         </div>
@@ -41,7 +41,9 @@ const newName = ref(session.value?.user.name || '');
 const isUpdating = ref(false);
 const updateMessage = ref('');
 
-const handleUpdateName = async () => {
+const handleUpdateName = async (e: Event) => {
+  e.preventDefault();
+
   if (!newName.value.trim()) {
     return;
   }

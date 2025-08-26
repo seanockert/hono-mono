@@ -2,7 +2,6 @@
   <div class="stack">
     <header class="inline-between">
       <h1>Login</h1>
-      <a href="/signup">Sign up</a>
     </header>
 
     <form @submit="handleLogin" class="stack">
@@ -12,17 +11,19 @@
 
       <div class="stack-quarter">
         <label for="email">Email</label>
-        <input type="email" autofocus v-model="email" required />
+        <input type="email" id="email" autofocus v-model="email" required />
       </div>
 
       <div class="stack-quarter">
         <label for="password">Password</label>
-        <input type="password" v-model="password" required />
+        <input type="password" id="password" v-model="password" required />
       </div>
 
       <button type="submit" :disabled="isPending || isLoggingIn">
         {{ isLoggingIn ? 'Logging in...' : 'Login' }}
       </button>
+
+      <div class="inline-quarter">or <a href="/signup">sign up</a></div>
       <!-- <button @click="handleGithubLogin">Login with GitHub</button> -->
     </form>
   </div>

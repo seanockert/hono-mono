@@ -1,11 +1,13 @@
 :root {
   --color-bg: #fff;
   --color-error: #b3332e;
-  --color-gradient: #efe3fd;
+  --color-gradient: #ede6ff;
   --color-link: #2261a0;
+  --color-link-secondary: #4822a0;
   --color-link-hover: #183d8d;
   --color-text: #333;
   --color-text-secondary: #676767;
+
   --size-base: 0.75rem;
   --size-half: 0.375rem;
   --size-quarter: 0.1875rem;
@@ -17,25 +19,29 @@
   line-height: 1.5;
   font-weight: 400;
 
-  font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* General resets */
 *,
 *::before,
 *::after {
   box-sizing: border-box;
+}
+
+* {
   margin: 0;
   overflow-wrap: break-word;
 }
 
 html {
   background: var(--color-bg)
-    linear-gradient(var(--color-gradient), transparent 3rem);
+    linear-gradient(in oklab, var(--color-gradient), transparent 3rem);
   color: var(--color-text);
   padding: 0.75rem;
+  font-size: clamp(1rem, 2vw, 1.3rem);
 }
 
 body {
@@ -45,33 +51,50 @@ body {
   margin: 1.5rem auto;
   max-width: 50rem;
   min-height: 100vh;
+}
+
+p {
+  text-wrap: pretty;
+}
+
+h1, h2, h3, h4, h5, h6 {
   text-wrap: balance;
+}
+
+img, svg {
+  display: block;
+  max-width: 100%;
 }
 
 a {
   color: var(--color-link);
 }
 
+a:hover, a:focus {
+  color: var(--color-link-hover);
+}
+
 input, textarea, button, select {
   border-radius: var(--size-half);
   font: inherit;
+  line-height: 1;
   max-width: 20rem;
-  padding: var(--size-half);
+  padding: var(--size-base);
 }
 
 button {
-  background: var(--color-link);
-  border-radius: var(--size-half);
+  background: linear-gradient(to right in oklab, var(--color-link), var(--color-link-secondary) 100%);
+  background-size: 200% 100%;
+  border-radius: var(--size-base);
   border: none;
   color: var(--color-bg);
   cursor: pointer;
   font-weight: bold;
-  padding: var(--size-half) var(--size-base);
-  transition: all 0.15s ease-in-out;
+  transition: background-position 0.15s ease-in-out, transform 0.15s ease-in-out;
 }
 
-button:hover, button:focus {
-  background: var(--color-link-hover);
+button:focus, button:hover {
+  background-position: 50% 0;
 }
 
 button:active {
@@ -97,7 +120,7 @@ button:disabled {
 }
 
 
-/* Inline and Stack layout */
+/* Inline and Stack layout. Docs: https://seanockert.com/css-layouts */
 [class^='inline'],
 [class*=' inline'],
 [class^='stack'],
@@ -156,4 +179,16 @@ ul[class] {
 
 .inline-between {
   justify-content: space-between;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    interpolate-size: allow-keywords;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition-duration: 0;
+  }
 }
