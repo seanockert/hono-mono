@@ -45,3 +45,6 @@ bun.lockb
 # Compiled TypeScript files in src (should go to dist instead)
 src/**/*.js
 server/src/**/*.js
+server/wrangler.*
+.wrangler/
+/server/static/

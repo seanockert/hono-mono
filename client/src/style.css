@@ -1,12 +1,14 @@
 :root {
-  --color-bg: #fff;
-  --color-error: #b3332e;
-  --color-gradient: #ede6ff;
-  --color-link: #2261a0;
-  --color-link-secondary: #4822a0;
-  --color-link-hover: #183d8d;
-  --color-text: #333;
-  --color-text-secondary: #676767;
+  --color-bg: light-dark(#fefefe, #191420);
+  --color-bg-secondary: light-dark(#f0f0f0, #261f2e);
+  --color-button-fg: #fefefe;
+  --color-error: light-dark(#b3332e, #ff6659);
+  --color-gradient: light-dark(#ede6ff, #2b2139);
+  --color-link: light-dark(#2261a0, #6287d9);
+  --color-link-secondary: light-dark(#4822a0, #9a5bff);
+  --color-link-hover: light-dark(#183d8d, #7298eb);
+  --color-text: light-dark(#333, #e6e6e6);
+  --color-text-secondary: light-dark(#676767, #999);
 
   --size-base: 0.75rem;
   --size-half: 0.375rem;
@@ -14,6 +16,8 @@
   --size-2x: 1.5rem;
   --size-4x: 3rem;
   --font-size-small: 0.875rem;
+
+  color-scheme: light dark;
 
   font-family: sans-serif;
   line-height: 1.5;
@@ -59,6 +63,7 @@ p {
 
 h1, h2, h3, h4, h5, h6 {
   text-wrap: balance;
+  line-height: 1.2;
 }
 
 img, svg {
@@ -87,10 +92,16 @@ button {
   background-size: 200% 100%;
   border-radius: var(--size-base);
   border: none;
-  color: var(--color-bg);
+  color: var(--color-button-fg);
   cursor: pointer;
   font-weight: bold;
   transition: background-position 0.15s ease-in-out, transform 0.15s ease-in-out;
+  white-space: nowrap;
+}
+
+.button-secondary {
+  background: var(--color-bg-secondary);
+  color: var(--color-text);
 }
 
 button:focus, button:hover {
@@ -106,17 +117,22 @@ button:disabled {
   opacity: 0.6;
 }
 
+input {
+  border: 1px solid var(--color-text-secondary);
+}
+
 .error-message {
   color: var(--color-error);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-bg: #191420;
-    --color-gradient: #594b6c;
-    --color-link: #6287d9;
-    --color-text: #e6e6e6;
+    color-scheme: dark;
   }
+}
+
+.dark {
+  color-scheme: dark;
 }
 
 
@@ -179,6 +195,10 @@ ul[class] {
 
 .inline-between {
   justify-content: space-between;
+}
+
+.inline-wrap {
+  flex-wrap: wrap;
 }
 
 @media (prefers-reduced-motion: no-preference) {

@@ -1,22 +1,22 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { auth } from "./lib/auth";
+import { serveStatic } from 'hono/cloudflare-workers'
+import { auth, type CloudflareBindings } from "./lib/auth";
 
-const app = new Hono();
+const app = new Hono<{ Bindings: CloudflareBindings }>();
 
 app.use(cors({
-  origin: process.env.CLIENT_URL as string,
+  origin: (origin, c) => c.env?.CLIENT_URL || process.env.CLIENT_URL as string,
   credentials: true,
 }));
 
-// Use the auth handler for auth routes
-app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
+// Auth routes
+app.on(["POST", "GET"], "/api/auth/*", (c) => auth(c.env).handler(c.req.raw));
 
-// Authenticated API endpoint
+// Protected endpoint
 app.get('/api/protected', async (c) => {
   try {
-    // Validate the token and retrieve the session using raw headers
-    const session = await auth.api.getSession({ 
+    const session = await auth(c.env).api.getSession({ 
       headers: c.req.raw.headers 
     });
 
@@ -24,7 +24,6 @@ app.get('/api/protected', async (c) => {
       return c.json({ error: 'Unauthorized' }, 401);
     }
 
-    // Return success message with user info
     return c.json({ 
       message: 'Authentication successful!', 
       user: session.user,
@@ -35,8 +34,8 @@ app.get('/api/protected', async (c) => {
   }
 });
 
-// Test route
-app.get('/', (c) => c.text('Hello App!'));
+// Serve static files and SPA
+app.use('*', serveStatic({ root: './', manifest: {} }));
 
 export default app;
 

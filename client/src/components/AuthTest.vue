@@ -1,7 +1,6 @@
 <template>
   <div class="stack-half">
-    <h3>Test Authenticated API</h3>
-    <button @click="testAuthenticatedEndpoint" :disabled="isTesting">
+    <button @click="testAuthenticatedEndpoint" class="button-secondary" :disabled="isTesting">
       {{ isTesting ? 'Testing...' : 'Test Protected Endpoint' }}
     </button>
     <div v-if="apiTestResult" class="api-result">
@@ -23,7 +22,8 @@ const testAuthenticatedEndpoint = async () => {
 
   try {
     // Make request to protected endpoint with cookies (session-based auth)
-    const response = await fetch('http://localhost:3000/api/protected', {
+    const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3000';
+    const response = await fetch(`${serverUrl}/api/protected`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -48,9 +48,8 @@ const testAuthenticatedEndpoint = async () => {
 
 <style scoped>
 .api-result {
-  background: #f5f5f5;
   border-radius: var(--size-half);
-  border: 1px solid #ddd;
+  border: 1px solid var(--color-text-secondary);
   color: var(--color-text);
   padding: var(--size-base);
 }

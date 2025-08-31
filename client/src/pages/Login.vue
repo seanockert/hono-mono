@@ -26,6 +26,8 @@
       <div class="inline-quarter">or <a href="/signup">sign up</a></div>
       <!-- <button @click="handleGithubLogin">Login with GitHub</button> -->
     </form>
+
+    <AuthTest />
   </div>
 </template>
 
@@ -34,6 +36,7 @@ import { ref, computed, watchEffect, watch } from 'vue';
 import { authClient } from '../lib/auth-client';
 import { useRouter } from '../lib/simple-router';
 import { getErrorMessage } from '../lib/auth-errors';
+import AuthTest from '../components/AuthTest.vue';
 
 const sessionData = authClient.useSession();
 const session = computed(() => sessionData.value.data);

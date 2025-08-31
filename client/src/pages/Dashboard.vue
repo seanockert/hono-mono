@@ -1,6 +1,6 @@
 <template>
   <div class="stack-2x">
-    <header class="inline-between">
+    <header class="inline-between inline-wrap">
       <h1>Hola {{ session?.user.name }}</h1>
       <button @click="handleSignOut">Sign Out</button>
     </header>

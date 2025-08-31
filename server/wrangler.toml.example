@@ -1,0 +1,13 @@
+name = "hono-mono"
+main = "dist/index.js"
+compatibility_date = "2025-02-13"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+CLIENT_URL = "http://localhost:5173"
+BETTER_AUTH_URL = "http://localhost:3000"
+
+[[d1_databases]]
+binding = "DATABASE"
+database_name = "honomono"
+database_id = ""
