@@ -1,13 +1,23 @@
-name = "hono-mono"
+name = "hono-mono-app"
 main = "dist/index.js"
 compatibility_date = "2025-02-13"
 compatibility_flags = ["nodejs_compat"]
 
+[assets]
+directory = "./static"
+
+# SPA fallback configuration
+[[assets.rules]]
+globs = ["/**"]
+fallback = { path = "/index.html" }
+
 [vars]
-CLIENT_URL = "http://localhost:5173"
-BETTER_AUTH_URL = "http://localhost:3000"
+# Public URLs
+BETTER_AUTH_URL = "https://hono-mono.mydomain.workers.dev"
+CLIENT_URL = "https://hono-mono.mydomain.workers.dev"
+# BETTER_AUTH_SECRET is configured as a Wrangler secret
 
 [[d1_databases]]
 binding = "DATABASE"
-database_name = "honomono"
-database_id = ""
+database_name = "hono-mono"
+database_id = "xxx"

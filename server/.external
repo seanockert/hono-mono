@@ -1,0 +1,2 @@
+// Exclude bun:sqlite from Cloudflare Workers bundle (local dev only)
+external:["bun:sqlite"]

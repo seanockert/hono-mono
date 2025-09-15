@@ -48,3 +48,4 @@ server/src/**/*.js
 server/wrangler.*
 .wrangler/
 /server/static/
+client/.env.production

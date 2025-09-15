@@ -1,19 +1,9 @@
-import type { D1Database } from "@cloudflare/workers-types";
 import { betterAuth } from "better-auth";
-
-export type CloudflareBindings = {
-  DATABASE?: D1Database;
-  CLIENT_URL?: string;
-  GITHUB_CLIENT_ID?: string;
-  GITHUB_CLIENT_SECRET?: string;
-  BETTER_AUTH_SECRET?: string;
-  BETTER_AUTH_URL?: string;
-};
+import type { CloudflareBindings } from "../index";
 
 export const auth = (env?: CloudflareBindings) => {
   const isCloudflare = !!env?.DATABASE;
   
-  // Base configuration shared between environments
   const baseConfig = {
     emailAndPassword: { enabled: true },
     socialProviders: { 
@@ -24,20 +14,20 @@ export const auth = (env?: CloudflareBindings) => {
     },
     user: {
       additionalFields: {
+        // Added a role field to the user
         role: {
           type: "string" as const,
           required: false,
           defaultValue: "user",
-          input: false,
+          input: false, // Can't set at signup
         },
-        // Add any other fields here
       },
     },
     databaseHooks: {
       user: {
         update: {
           before: async (userData: any) => {
-            // Automatically update the updatedAt field
+            // Automatically update the updatedAt field when data updates
             return { data: { ...userData, updatedAt: new Date() } };
           },
         },

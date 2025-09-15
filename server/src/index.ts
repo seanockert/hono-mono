@@ -1,7 +1,16 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { serveStatic } from 'hono/cloudflare-workers'
-import { auth, type CloudflareBindings } from "./lib/auth";
+import type { D1Database } from "@cloudflare/workers-types";
+import { auth } from "./lib/auth";
+
+export type CloudflareBindings = {
+  BETTER_AUTH_SECRET?: string;
+  BETTER_AUTH_URL?: string;
+  CLIENT_URL?: string;
+  DATABASE?: D1Database;
+  GITHUB_CLIENT_ID?: string;
+  GITHUB_CLIENT_SECRET?: string;
+};
 
 const app = new Hono<{ Bindings: CloudflareBindings }>();
 
@@ -10,7 +19,7 @@ app.use(cors({
   credentials: true,
 }));
 
-// Auth routes
+// Auth routes  
 app.on(["POST", "GET"], "/api/auth/*", (c) => auth(c.env).handler(c.req.raw));
 
 // Protected endpoint
@@ -34,8 +43,7 @@ app.get('/api/protected', async (c) => {
   }
 });
 
-// Serve static files and SPA
-app.use('*', serveStatic({ root: './', manifest: {} }));
+// Static files and SPA fallback handled by Cloudflare Workers
 
 export default app;
 
