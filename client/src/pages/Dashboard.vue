@@ -20,10 +20,13 @@
 
         <div class="inline"><strong>Email:</strong> {{ session.user.email }}</div>
         <div class="inline"><strong>User ID:</strong> {{ session.user.id }}</div>
+        <div class="inline"><strong>Role:</strong> {{ session.user.role ?? '-' }}</div>
       </div>
     </main>
 
     <AuthTest />
+
+    <UserList v-if="session?.user.role === 'admin'" />
   </div>
 </template>
 
@@ -32,6 +35,7 @@ import { authClient } from '../lib/auth-client';
 import { useRouter } from '../lib/simple-router';
 import { computed, ref } from 'vue';
 import AuthTest from '../components/AuthTest.vue';
+import UserList from '../components/UserList.vue';
 
 const sessionData = authClient.useSession();
 const session = computed(() => sessionData.value.data);

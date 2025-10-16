@@ -1,7 +1,9 @@
 import { betterAuth } from "better-auth";
+import { admin } from "better-auth/plugins"
 import type { CloudflareBindings } from "../index";
 
-export const auth = (env?: CloudflareBindings) => {
+// Single auth configuration that handles both CLI and runtime scenarios
+function createAuth(env?: CloudflareBindings) {
   const isCloudflare = !!env?.DATABASE;
   
   const baseConfig = {
@@ -14,7 +16,6 @@ export const auth = (env?: CloudflareBindings) => {
     },
     user: {
       additionalFields: {
-        // Added a role field to the user
         role: {
           type: "string" as const,
           required: false,
@@ -23,6 +24,7 @@ export const auth = (env?: CloudflareBindings) => {
         },
       },
     },
+    plugins: [admin()],
     databaseHooks: {
       user: {
         update: {
@@ -60,4 +62,10 @@ export const auth = (env?: CloudflareBindings) => {
       throw new Error("Local development requires bun:sqlite");
     }
   }
-};
+}
+
+// Export for CLI schema generation (uses local development config)
+export const auth = createAuth();
+
+// Export for runtime usage
+export { createAuth };

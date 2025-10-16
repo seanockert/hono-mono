@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import type { D1Database } from "@cloudflare/workers-types";
-import { auth } from "./lib/auth";
+import { createAuth } from "./lib/auth";
 
 export type CloudflareBindings = {
   BETTER_AUTH_SECRET?: string;
@@ -20,12 +20,12 @@ app.use(cors({
 }));
 
 // Auth routes  
-app.on(["POST", "GET"], "/api/auth/*", (c) => auth(c.env).handler(c.req.raw));
+app.on(["POST", "GET"], "/api/auth/*", (c) => createAuth(c.env).handler(c.req.raw));
 
 // Protected endpoint
 app.get('/api/protected', async (c) => {
   try {
-    const session = await auth(c.env).api.getSession({ 
+    const session = await createAuth(c.env).api.getSession({ 
       headers: c.req.raw.headers 
     });
 

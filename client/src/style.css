@@ -87,6 +87,10 @@ input, textarea, button, select {
   padding: var(--size-base);
 }
 
+select {
+  padding: var(--size-half);
+}
+
 button {
   background: linear-gradient(to right in oklab, var(--color-link), var(--color-link-secondary) 100%);
   background-size: 200% 100%;
@@ -200,6 +204,27 @@ ul[class] {
 .inline-wrap {
   flex-wrap: wrap;
 }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+th, td {
+  padding: var(--size-half);
+  text-align: left;
+}
+
+th {
+  padding-top: 0;
+  border-bottom: 1px solid var(--color-text-secondary);
+}
+
+tbody tr:hover {
+  background-color: var(--color-bg-secondary);
+}
+
 
 @media (prefers-reduced-motion: no-preference) {
   html {
