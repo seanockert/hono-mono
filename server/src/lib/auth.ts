@@ -1,71 +1,52 @@
 import { betterAuth } from "better-auth";
-import { admin } from "better-auth/plugins"
+import { Kysely } from "kysely";
+import { D1Dialect } from "kysely-d1";
 import type { CloudflareBindings } from "../index";
+import { authConfig } from "../../better-auth.config";
 
-// Single auth configuration that handles both CLI and runtime scenarios
 function createAuth(env?: CloudflareBindings) {
   const isCloudflare = !!env?.DATABASE;
   
-  const baseConfig = {
-    emailAndPassword: { enabled: true },
-    socialProviders: { 
-      github: { 
-        clientId: (env?.GITHUB_CLIENT_ID || process.env.GITHUB_CLIENT_ID) as string, 
-        clientSecret: (env?.GITHUB_CLIENT_SECRET || process.env.GITHUB_CLIENT_SECRET) as string, 
-      }, 
-    },
-    user: {
-      additionalFields: {
-        role: {
-          type: "string" as const,
-          required: false,
-          defaultValue: "user",
-          input: false, // Can't set at signup
-        },
-      },
-    },
-    plugins: [admin()],
-    databaseHooks: {
-      user: {
-        update: {
-          before: async (userData: any) => {
-            // Automatically update the updatedAt field when data updates
-            return { data: { ...userData, updatedAt: new Date() } };
-          },
-        },
-      },
-    },
-  };
-
   if (isCloudflare) {
-    // Cloudflare Workers with D1
+    // Use Kysely for D1 (D1 doesn't support SQL RETURNING clause)
+    const db = new Kysely({
+      dialect: new D1Dialect({
+        database: env.DATABASE!,
+      }),
+    });
+    
     return betterAuth({
-      ...baseConfig,
-      database: env.DATABASE!,
+      ...authConfig,
+      socialProviders: {
+        github: {
+          clientId: env.GITHUB_CLIENT_ID!,
+          clientSecret: env.GITHUB_CLIENT_SECRET!,
+        },
+      },
+      database: {
+        db,
+        type: "sqlite",
+      },
       baseURL: env.BETTER_AUTH_URL!,
       secret: env.BETTER_AUTH_SECRET!,
       trustedOrigins: [env.CLIENT_URL!],
     });
-  } else {
-    // Using bun:sqlite directly for local development
-    try {
-      const { Database } = require("bun:sqlite");
-      return betterAuth({
-        ...baseConfig,
-        database: new Database("src/auth.db"),
-        trustedOrigins: [
-          process.env.SERVER_URL as string,
-          process.env.CLIENT_URL as string,
-        ],
-      });
-    } catch (error) {
-      throw new Error("Local development requires bun:sqlite");
-    }
   }
+
+  // Local development with Bun SQLite
+  const { Database } = require("bun:sqlite");
+  const sqlite = new Database("src/auth.db");
+  
+  return betterAuth({
+    ...authConfig,
+    database: sqlite,
+    baseURL: process.env.BETTER_AUTH_URL as string,
+    secret: process.env.BETTER_AUTH_SECRET as string,
+    trustedOrigins: [
+      process.env.BETTER_AUTH_URL as string,
+      process.env.CLIENT_URL as string,
+    ],
+  });
 }
 
-// Export for CLI schema generation (uses local development config)
-export const auth = createAuth();
-
-// Export for runtime usage
 export { createAuth };

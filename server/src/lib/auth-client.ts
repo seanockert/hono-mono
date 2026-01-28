@@ -1,5 +1,5 @@
 import { createAuthClient } from "better-auth/client";
-import type { auth } from "./auth";
+import type { auth } from "../../better-auth.config";
 import { adminClient, inferAdditionalFields } from "better-auth/client/plugins";
 
 export const authClient = createAuthClient({

@@ -43,6 +43,12 @@ bun.lockb
 *.db
 *.db-journal
 
+# Drizzle migrations (generated)
+/server/drizzle/
+
+# Better Auth migrations (legacy, should be removed)
+/server/better-auth_migrations/
+
 # Compiled TypeScript files in src (should go to dist instead)
 src/**/*.js
 server/src/**/*.js
