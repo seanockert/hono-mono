@@ -3,18 +3,10 @@ main = "dist/index.js"
 compatibility_date = "2025-02-13"
 compatibility_flags = ["nodejs_compat"]
 
-[assets]
-directory = "./static"
-
-# SPA fallback configuration
-[[assets.rules]]
-globs = ["/**"]
-fallback = { path = "/index.html" }
-
 [vars]
-# Public URLs
-BETTER_AUTH_URL = "https://hono-mono.mydomain.workers.dev"
-CLIENT_URL = "https://hono-mono.mydomain.workers.dev"
+# Public URLs - Update with your actual deployment URLs
+BETTER_AUTH_URL = "https://your-app-name.workers.dev"
+CLIENT_URL = "https://your-client-name.pages.dev"
 # BETTER_AUTH_SECRET is configured as a Wrangler secret
 
 [[d1_databases]]

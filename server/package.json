@@ -4,12 +4,11 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc",
-    "build:full": "cd .. && bun run build:client && cd server && rm -rf static && mkdir -p static && cp -r ../client/dist/* static/ && bun run esbuild.config.js",
-    "build:prod": "cd .. && cross-env NODE_ENV=production bun run build:client && cd server && rm -rf static && mkdir -p static && cp -r ../client/dist/* static/ && bun run esbuild.config.js",
+    "build": "bun run esbuild.config.js",
+    "build:prod": "cross-env NODE_ENV=production bun run esbuild.config.js",
     "dev": "bun run --hot src/index.ts",
     "deploy": "bun run build:prod && wrangler deploy",
-    "deploy:dev": "bun run build:full && wrangler deploy"
+    "deploy:dev": "bun run build && wrangler deploy"
   },
   "dependencies": {
     "better-auth": "^1.4.17",

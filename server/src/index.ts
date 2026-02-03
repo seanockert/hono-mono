@@ -2,7 +2,6 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import type { D1Database } from "@cloudflare/workers-types";
 import { createAuth } from "./lib/auth";
-import type { Fetcher } from '@cloudflare/workers-types';
 
 export type CloudflareBindings = {
   BETTER_AUTH_SECRET?: string;
@@ -11,7 +10,6 @@ export type CloudflareBindings = {
   DATABASE?: D1Database;
   GITHUB_CLIENT_ID?: string;
   GITHUB_CLIENT_SECRET?: string;
-  ASSETS?: Fetcher;
 };
 
 const app = new Hono<{ Bindings: CloudflareBindings }>();
@@ -49,25 +47,6 @@ app.get('/api/protected', async (c) => {
     user: session.user,
     timestamp: new Date().toISOString()
   });
-});
-
-// Serve static assets and SPA fallback
-app.use('*', async (c) => {
-  if (!c.env.ASSETS) {
-    return c.notFound();
-  }
-
-  const assetResponse = await c.env.ASSETS.fetch(c.req.url);
-  
-  // If asset exists, return it
-  if (assetResponse.status !== 404) {
-    return assetResponse;
-  }
-  
-  // For SPA routes (not found assets), serve index.html
-  const url = new URL(c.req.url);
-  const indexUrl = `${url.origin}/index.html`;
-  return c.env.ASSETS.fetch(indexUrl);
 });
 
 export default app;

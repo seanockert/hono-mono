@@ -30,6 +30,12 @@ function createAuth(env?: CloudflareBindings) {
       baseURL: env.BETTER_AUTH_URL!,
       secret: env.BETTER_AUTH_SECRET!,
       trustedOrigins: [env.CLIENT_URL!],
+      advanced: {
+        defaultCookieAttributes: {
+          sameSite: "none",
+          secure: true,
+        },
+      },
     });
   }
 

@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "build:prod": "vue-tsc -b && vite build --mode production",
+    "preview": "vite preview",
+    "deploy": "bun run build:prod && wrangler pages deploy dist --project-name=hono-mono-client",
+    "deploy:dev": "bun run build && wrangler pages deploy dist --project-name=hono-mono-client"
   },
   "dependencies": {
     "better-auth": "^1.4.17",

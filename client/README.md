@@ -1,24 +1,58 @@
 # Vue + TypeScript + Vite Client
 
+Frontend client deployed to Cloudflare Pages.
+
 ## Environment Variables
 
-Create environment files for different environments:
+Production configuration is in `.env.production` (committed to git).
 
-**For development (.env.development):**
-```
+**For local development**, create `.env.local`:
+```env
 VITE_SERVER_URL=http://localhost:3000
 ```
 
-**For production (.env.production):**
-```
-VITE_SERVER_URL=https://your-worker.your-subdomain.workers.dev
-```
-
-The client will automatically use the appropriate environment file based on the build mode.
+Vite automatically uses `.env.production` when building for production.
 
 ## Development
+
+Install dependencies and start the dev server:
 
 ```sh
 bun install
 bun run dev
 ```
+
+Open http://localhost:5173
+
+## Building
+
+Build for production:
+
+```sh
+bun run build
+```
+
+Preview production build locally:
+
+```sh
+bun run preview
+```
+
+## Deployment to Cloudflare Pages
+
+Deploy to Cloudflare Pages:
+
+```sh
+# Production deployment
+bun run deploy
+
+# Development deployment  
+bun run deploy:dev
+```
+
+The deployment process:
+1. Builds the Vue application with Vite
+2. Compiles TypeScript and optimizes assets
+3. Deploys the `dist` folder to Cloudflare Pages via Wrangler
+
+The production build automatically uses `.env.production` for environment variables.
