@@ -32,12 +32,16 @@ window.addEventListener('popstate', updateRoute)
 export const useRouter = () => {
   const route = computed(() => currentRoute.value)
 
-  const navigate = (newRoute: Route) => {
+  const navigate = (newRoute: Route, replace = false) => {
     // Find path for route
     const path = Object.keys(routes).find(key => routes[key as keyof typeof routes] === newRoute) || '/'
     
     if (window.location.pathname !== path) {
-      window.history.pushState({}, '', path)
+      if (replace) {
+        window.history.replaceState({}, '', path)
+      } else {
+        window.history.pushState({}, '', path)
+      }
       currentRoute.value = newRoute
     }
   }

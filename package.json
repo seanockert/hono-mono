@@ -11,18 +11,10 @@
     "./shared"
   ],
   "scripts": {
-    "dev:client": "cd client && bun run dev",
-    "dev:server": "cd server && bun run dev",
-    "dev:shared": "cd shared && bun run dev",
-    "dev": "concurrently \"bun run dev:shared\" \"bun run dev:server\" \"bun run dev:client\"",
-    "build:client": "cd client && bun run build",
-    "build:shared": "cd shared && bun run build",
-    "build:server": "cd server && bun run build",
-    "build": "bun run build:shared && bun run build:server && bun run build:client",
-    "deploy:client": "cd client && bun run deploy",
-    "deploy:server": "cd server && bun run deploy",
-    "deploy:all": "bun run deploy:server && bun run deploy:client",
-    "postinstall": "bun run build:shared && bun run build:server"
+    "dev": "concurrently \"cd shared && bun run dev\" \"cd server && bun run dev\" \"cd client && bun run dev\"",
+    "build": "cd shared && bun run build && cd ../server && bun run build && cd ../client && bun run build",
+    "deploy": "cd server && bun run deploy && cd ../client && bun run deploy",
+    "postinstall": "cd shared && bun run build && cd ../server && bun run build"
   },
   "keywords": [
     "bun",

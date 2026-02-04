@@ -1,7 +1,7 @@
 <template>
   <div class="stack-2x">
     <header class="inline-between inline-wrap">
-      <h1>Hola {{ session?.user.name }}</h1>
+      <h1>Hola, {{ session?.user.name }}</h1>
       <button @click="handleSignOut">Sign Out</button>
     </header>
 
@@ -32,14 +32,12 @@
 
 <script setup lang="ts">
 import { authClient } from '../lib/auth-client';
-import { useRouter } from '../lib/simple-router';
 import { computed, ref } from 'vue';
 import AuthTest from '../components/AuthTest.vue';
 import UserList from '../components/UserList.vue';
 
 const sessionData = authClient.useSession();
 const session = computed(() => sessionData.value.data);
-const { navigate } = useRouter();
 
 const newName = ref(session.value?.user.name || '');
 const isUpdating = ref(false);
@@ -78,6 +76,6 @@ const handleUpdateName = async (e: Event) => {
 
 const handleSignOut = async () => {
   await authClient.signOut();
-  navigate('login');
+  // Navigation to login is handled automatically by App.vue watchEffect
 };
 </script>

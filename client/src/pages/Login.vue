@@ -23,7 +23,7 @@
         {{ isLoggingIn ? 'Logging in...' : 'Login' }}
       </button>
 
-      <div class="inline-quarter">or <a href="/signup">sign up</a></div>
+      <div class="inline-quarter">or <a href="/signup" @click.prevent="navigate('signup')">sign up</a></div>
       <!-- <button @click="handleGithubLogin">Login with GitHub</button> -->
     </form>
 
@@ -32,28 +32,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watchEffect, watch } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { authClient } from '../lib/auth-client';
 import { useRouter } from '../lib/simple-router';
 import { getErrorMessage } from '../lib/auth-errors';
 import AuthTest from '../components/AuthTest.vue';
 
 const sessionData = authClient.useSession();
-const session = computed(() => sessionData.value.data);
 const isPending = computed(() => sessionData.value.isPending);
-const { route, navigate } = useRouter();
+const { navigate } = useRouter();
 
 const email = ref('');
 const password = ref('');
 const errorMessage = ref('');
 const isLoggingIn = ref(false);
-
-// Redirect to dashboard when user logs in
-watchEffect(() => {
-  if (session.value && route.value !== 'dashboard') {
-    navigate('dashboard');
-  }
-});
 
 // Clear error when user starts typing
 watch([email, password], () => {
@@ -76,6 +68,7 @@ const handleLogin = async (e: Event) => {
     if (result.error) {
       handleAuthError(result.error);
     }
+    // Navigation after successful login is handled by App.vue watchEffect
   } catch (error: any) {
     handleAuthError(error);
   } finally {
