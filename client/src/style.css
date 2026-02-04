@@ -33,6 +33,7 @@
 *::before,
 *::after {
   box-sizing: border-box;
+  background-repeat: no-repeat;
 }
 
 * {
@@ -43,15 +44,18 @@
 html {
   background: var(--color-bg)
     linear-gradient(in oklab, var(--color-gradient), transparent 3rem);
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: none;
   color: var(--color-text);
-  padding: 0.75rem;
   font-size: clamp(1rem, 2vw, 1.3rem);
+  line-height: 1.5;
+  padding: 0.75rem;
+  text-size-adjust: none;
 }
 
 body {
   color: inherit;
   font-family: sans-serif;
-  line-height: 1.5;
   margin: 1.5rem auto;
   max-width: 50rem;
   min-height: 100vh;
@@ -68,7 +72,11 @@ h1, h2, h3, h4, h5, h6 {
 
 img, svg {
   display: block;
-  max-width: 100%;
+  max-inline-size: 100%;
+}
+
+svg:not([fill]) {
+  fill: currentColor;
 }
 
 a {
@@ -103,6 +111,11 @@ button {
   white-space: nowrap;
 }
 
+.button-small {
+  font-size: var(--font-size-small);
+  padding: var(--size-half);
+}
+
 .button-secondary {
   background: var(--color-bg-secondary);
   color: var(--color-text);
@@ -116,9 +129,9 @@ button:active {
   transform: scale(0.97);
 }
 
-button:disabled {
+:disabled {
   cursor: not-allowed;
-  opacity: 0.6;
+  opacity: 0.8;
 }
 
 input {

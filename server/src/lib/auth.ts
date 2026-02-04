@@ -4,9 +4,10 @@ import { D1Dialect } from "kysely-d1";
 import type { CloudflareBindings } from "../index";
 import { authConfig } from "../../better-auth.config";
 
-function createAuth(env?: CloudflareBindings) {
+const createAuth = (env?: CloudflareBindings) => {
   const isCloudflare = !!env?.DATABASE;
   
+  // Running on Cloudflare Workers
   if (isCloudflare) {
     if (!env.BETTER_AUTH_SECRET || !env.BETTER_AUTH_URL || !env.CLIENT_URL) {
       throw new Error('Missing required environment variables');

@@ -3,4 +3,12 @@ import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
   plugins: [vue()],
+  server: {
+    watch: {
+      ignored: ['!**/node_modules/shared/**'],
+    },
+  },
+  optimizeDeps: {
+    exclude: ['shared'],
+  },
 })

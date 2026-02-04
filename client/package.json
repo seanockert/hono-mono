@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "better-auth": "^1.4.17",
+    "shared": "workspace:*",
     "vue": "^3.5.27"
   },
   "devDependencies": {

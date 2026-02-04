@@ -20,16 +20,17 @@
           <th>Name</th>
           <th>Email</th>
           <th>Role</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody v-if="isLoading">
         <tr>
-          <td colspan="3">Loading users...</td>
+          <td colspan="4">Loading users...</td>
         </tr>
       </tbody>
       <tbody v-else-if="error" class="error-message">
         <tr>
-          <td colspan="3">{{ error }}</td>
+          <td colspan="4">{{ error }}</td>
         </tr>
       </tbody>
       <tbody v-else>
@@ -37,6 +38,15 @@
           <td>{{ user.name || '-' }}</td>
           <td>{{ user.email }}</td>
           <td>{{ user.role ?? '-' }}</td>
+          <td>
+            <button
+              @click="deleteUser(user.id)"
+              :disabled="deletingUserId === user.id"
+              class="button-secondary button-small"
+            >
+              {{ deletingUserId === user.id ? 'Deleting...' : 'Delete' }}
+            </button>
+          </td>
         </tr>
       </tbody>
     </table>
@@ -46,22 +56,26 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue';
 import { authClient } from '../lib/auth-client';
-
-interface User {
-  id: string;
-  name?: string;
-  email: string;
-  role?: string;
-}
+import type { User, UserRole } from 'shared';
 
 const limit = 100;
 const users = ref<User[]>([]);
 const isLoading = ref(false);
 const error = ref<string>('');
 const selectedRole = ref<string>('');
-const availableRoles = ref(['admin', 'user']);
+const availableRoles: UserRole[] = ['admin', 'user'];
+const deletingUserId = ref<string | null>(null);
 
 const errorMessage = 'Failed to fetch users';
+
+const checkAdminRole = async () => {
+  // Use Better Auth's hasPermission method for robust permission checking
+  const { data } = await authClient.admin.hasPermission({
+    permission: {
+      user: ['delete'],
+    },
+  });
+};
 
 const getUsers = async () => {
   isLoading.value = true;
@@ -91,7 +105,36 @@ const getUsers = async () => {
   }
 };
 
+const deleteUser = async (userId: string) => {
+  if (!confirm('Delete this user? This is permanent.')) {
+    return;
+  }
+
+  deletingUserId.value = userId;
+
+  try {
+    const { error: deleteError } = await authClient.admin.removeUser({
+      userId,
+    });
+
+    if (deleteError) {
+      alert(`Failed to delete user: ${deleteError.message || 'Unknown error'}`);
+    } else {
+      await getUsers();
+    }
+  } catch (err) {
+    alert('Failed to delete user');
+  } finally {
+    deletingUserId.value = null;
+  }
+};
+
 watch(selectedRole, getUsers);
 
-onMounted(getUsers);
+onMounted(async () => {
+  await checkAdminRole();
+  await getUsers();
+});
 </script>
+
+<style scoped></style>

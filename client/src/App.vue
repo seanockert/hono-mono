@@ -21,10 +21,21 @@ const session = computed(() => sessionData.value.data);
 const isPending = computed(() => sessionData.value.isPending);
 const { route, navigate } = useRouter();
 
-// Navigate to dashboard when user logs in
+// Sync route with auth state
 watchEffect(() => {
+  if (isPending.value) {
+    return;
+  }
+
+  // If logged in and not on dashboard, go to dashboard
   if (session.value && route.value !== 'dashboard') {
     navigate('dashboard');
+    return;
+  }
+
+  // If not logged in and on dashboard, go to login
+  if (!session.value && route.value === 'dashboard') {
+    navigate('login', true);
   }
 });
 </script>

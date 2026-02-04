@@ -1,4 +1,5 @@
 import type { BetterAuthOptions } from "better-auth";
+import { admin } from "better-auth/plugins";
 
 // Shared auth configuration
 export const authConfig: Partial<BetterAuthOptions> = {
@@ -9,6 +10,9 @@ export const authConfig: Partial<BetterAuthOptions> = {
       clientSecret: process.env.GITHUB_CLIENT_SECRET || "mock", 
     }, 
   },
+  plugins: [
+    admin(),
+  ],
   user: {
     additionalFields: {
       role: {
