@@ -69,7 +69,6 @@ const deletingUserId = ref<string | null>(null);
 const errorMessage = 'Failed to fetch users';
 
 const checkAdminRole = async () => {
-  // Use Better Auth's hasPermission method for robust permission checking
   await authClient.admin.hasPermission({
     permission: {
       user: ['delete'],
