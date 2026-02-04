@@ -8,28 +8,34 @@ function createAuth(env?: CloudflareBindings) {
   const isCloudflare = !!env?.DATABASE;
   
   if (isCloudflare) {
-    // Use Kysely for D1 (D1 doesn't support SQL RETURNING clause)
+    if (!env.BETTER_AUTH_SECRET || !env.BETTER_AUTH_URL || !env.CLIENT_URL) {
+      throw new Error('Missing required environment variables');
+    }
+    
     const db = new Kysely({
       dialect: new D1Dialect({
         database: env.DATABASE!,
       }),
     });
     
+    const socialProviders: any = {};
+    if (env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET) {
+      socialProviders.github = {
+        clientId: env.GITHUB_CLIENT_ID,
+        clientSecret: env.GITHUB_CLIENT_SECRET,
+      };
+    }
+    
     return betterAuth({
       ...authConfig,
-      socialProviders: {
-        github: {
-          clientId: env.GITHUB_CLIENT_ID!,
-          clientSecret: env.GITHUB_CLIENT_SECRET!,
-        },
-      },
+      socialProviders,
       database: {
         db,
         type: "sqlite",
       },
-      baseURL: env.BETTER_AUTH_URL!,
-      secret: env.BETTER_AUTH_SECRET!,
-      trustedOrigins: [env.CLIENT_URL!],
+      baseURL: env.BETTER_AUTH_URL,
+      secret: env.BETTER_AUTH_SECRET,
+      trustedOrigins: [env.BETTER_AUTH_URL, env.CLIENT_URL],
       advanced: {
         defaultCookieAttributes: {
           sameSite: "none",

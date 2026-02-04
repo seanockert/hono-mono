@@ -24,17 +24,34 @@ const getAuth = (env: CloudflareBindings) => {
   return authInstance;
 };
 
-app.use(cors({
-  origin: (origin, c) => c.env?.CLIENT_URL || process.env.CLIENT_URL as string,
+app.use('*', cors({
+  origin: (origin) => origin || '*',
   credentials: true,
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization'],
 }));
 
-// Auth routes  
-app.on(["POST", "GET"], "/api/auth/*", (c) => getAuth(c.env).handler(c.req.raw));
+// Base route
+app.get('/', (c) => c.text('Hola!'));
+
+// Auth routes
+app.all("/api/auth/*", async (c) => {
+  try {
+    const auth = getAuth(c.env);
+    return await auth.handler(c.req.raw);
+  } catch (error) {
+    console.error('Auth error:', error);
+    return c.json({ 
+      error: 'Internal server error', 
+      message: error instanceof Error ? error.message : 'Unknown error'
+    }, 500);
+  }
+});
 
 // Protected endpoint
 app.get('/api/protected', async (c) => {
-  const session = await getAuth(c.env).api.getSession({ 
+  const auth = getAuth(c.env);
+  const session = await auth.api.getSession({ 
     headers: c.req.raw.headers 
   });
 

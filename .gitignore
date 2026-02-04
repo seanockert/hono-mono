@@ -43,9 +43,6 @@ bun.lockb
 *.db
 *.db-journal
 
-# Drizzle migrations (generated)
-/server/drizzle/
-
 # Better Auth migrations (legacy, should be removed)
 /server/better-auth_migrations/
 
