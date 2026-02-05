@@ -23,7 +23,9 @@
         {{ isLoggingIn ? 'Logging in...' : 'Login' }}
       </button>
 
-      <div class="inline-quarter">or <a href="/signup" @click.prevent="navigate('signup')">sign up</a></div>
+      <div class="inline-quarter">
+        or <a href="/signup" @click.prevent="navigate('signup')">sign up</a>
+      </div>
       <!-- <button @click="handleGithubLogin">Login with GitHub</button> -->
     </form>
 

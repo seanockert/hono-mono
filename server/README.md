@@ -9,21 +9,25 @@ The server uses environment variables configured in `wrangler.toml`:
 - `GITHUB_CLIENT_SECRET`: GitHub OAuth secret (use `wrangler secret put GITHUB_CLIENT_SECRET`)
 
 **For local development:**
+
 - The CLIENT_URL can be set to `http://localhost:5173` for the Vite dev server
 - Set environment variables in a `.dev.vars` file in the server directory
 
 **For Cloudflare Workers deployment:**
+
 - Update `wrangler.toml` with your production URLs
 - Use `wrangler secret put <KEY>` for sensitive environment variables
 
 ## Development
 
 To install dependencies:
+
 ```sh
 bun install
 ```
 
 To run locally:
+
 ```sh
 bun run dev
 ```
@@ -43,6 +47,7 @@ bun run deploy:dev
 ```
 
 The deployment process:
+
 1. Builds the server code using esbuild
 2. Bundles all dependencies
 3. Deploys to Cloudflare Workers via Wrangler
@@ -55,4 +60,3 @@ Run the commands to setup authentication using Sqlite DB
 bunx --bun @better-auth/cli@1.3.4 generate --config src/lib/auth.ts
 bunx --bun @better-auth/cli@1.3.4 migrate --config src/lib/auth.ts
 ```
-

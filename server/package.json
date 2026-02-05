@@ -8,7 +8,10 @@
     "build:prod": "cross-env NODE_ENV=production bun run esbuild.config.js",
     "dev": "bun run --hot src/index.ts",
     "deploy": "bun run build:prod && wrangler deploy",
-    "deploy:dev": "bun run build && wrangler deploy"
+    "deploy:dev": "bun run build && wrangler deploy",
+    "lint": "oxlint --ignore-path ../.gitignore .",
+    "format": "oxfmt --ignore-path ../.gitignore .",
+    "format:check": "oxfmt --ignore-path ../.gitignore --check ."
   },
   "dependencies": {
     "better-auth": "^1.4.17",

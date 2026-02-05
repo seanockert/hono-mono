@@ -42,8 +42,7 @@
 }
 
 html {
-  background: var(--color-bg)
-    linear-gradient(in oklab, var(--color-gradient), transparent 3rem);
+  background: var(--color-bg) linear-gradient(in oklab, var(--color-gradient), transparent 3rem);
   -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: none;
   color: var(--color-text);
@@ -65,12 +64,18 @@ p {
   text-wrap: pretty;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   text-wrap: balance;
   line-height: 1.2;
 }
 
-img, svg {
+img,
+svg {
   display: block;
   max-inline-size: 100%;
 }
@@ -83,11 +88,15 @@ a {
   color: var(--color-link);
 }
 
-a:hover, a:focus {
+a:hover,
+a:focus {
   color: var(--color-link-hover);
 }
 
-input, textarea, button, select {
+input,
+textarea,
+button,
+select {
   border-radius: var(--size-half);
   font: inherit;
   line-height: 1;
@@ -100,14 +109,20 @@ select {
 }
 
 button {
-  background: linear-gradient(to right in oklab, var(--color-link), var(--color-link-secondary) 100%);
+  background: linear-gradient(
+    to right in oklab,
+    var(--color-link),
+    var(--color-link-secondary) 100%
+  );
   background-size: 200% 100%;
   border-radius: var(--size-base);
   border: none;
   color: var(--color-button-fg);
   cursor: pointer;
   font-weight: bold;
-  transition: background-position 0.15s ease-in-out, transform 0.15s ease-in-out;
+  transition:
+    background-position 0.15s ease-in-out,
+    transform 0.15s ease-in-out;
   white-space: nowrap;
 }
 
@@ -121,7 +136,8 @@ button {
   color: var(--color-text);
 }
 
-button:focus, button:hover {
+button:focus,
+button:hover {
   background-position: 50% 0;
 }
 
@@ -151,7 +167,6 @@ input {
 .dark {
   color-scheme: dark;
 }
-
 
 /* Inline and Stack layout. Docs: https://seanockert.com/css-layouts */
 [class^='inline'],
@@ -224,7 +239,8 @@ table {
   margin-top: 1rem;
 }
 
-th, td {
+th,
+td {
   padding: var(--size-half);
   text-align: left;
 }
@@ -237,7 +253,6 @@ th {
 tbody tr:hover {
   background-color: var(--color-bg-secondary);
 }
-
 
 @media (prefers-reduced-motion: no-preference) {
   html {

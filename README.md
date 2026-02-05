@@ -30,6 +30,7 @@ bun run dev
 ```
 
 This will start:
+
 - Shared types watcher
 - Backend server at http://localhost:3000
 - Frontend dev server at http://localhost:5173
@@ -97,4 +98,3 @@ For local development, create `client/.env.local`:
 ```env
 VITE_SERVER_URL=http://localhost:3000
 ```
-

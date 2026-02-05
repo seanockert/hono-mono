@@ -5,7 +5,10 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch"
+    "dev": "tsc --watch",
+    "lint": "oxlint --ignore-path ../.gitignore .",
+    "format": "oxfmt --ignore-path ../.gitignore .",
+    "format:check": "oxfmt --ignore-path ../.gitignore --check ."
   },
   "devDependencies": {
     "typescript": "^5.9.3"

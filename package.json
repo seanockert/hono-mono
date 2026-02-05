@@ -2,9 +2,17 @@
   "name": "hono-auth",
   "version": "0.0.1",
   "description": "A monorepo with Bun, Hono, Vue, and Better Auth",
-  "author": "Sean Ockert",
-  "license": "MIT",
+  "keywords": [
+    "better-auth",
+    "bun",
+    "hono",
+    "monorepo",
+    "vite",
+    "vue"
+  ],
   "homepage": "",
+  "license": "MIT",
+  "author": "Sean Ockert",
   "workspaces": [
     "./server",
     "./client",
@@ -14,16 +22,17 @@
     "dev": "concurrently \"cd shared && bun run dev\" \"cd server && bun run dev\" \"cd client && bun run dev\"",
     "build": "cd shared && bun run build && cd ../server && bun run build && cd ../client && bun run build",
     "deploy": "cd server && bun run deploy && cd ../client && bun run deploy",
-    "postinstall": "cd shared && bun run build && cd ../server && bun run build"
+    "postinstall": "cd shared && bun run build && cd ../server && bun run build",
+    "lint": "oxlint --ignore-path .gitignore .",
+    "format": "oxfmt --ignore-path .gitignore .",
+    "format:check": "oxfmt --ignore-path .gitignore --check ."
   },
-  "keywords": [
-    "bun",
-    "hono",
-    "vue",
-    "vite",
-    "better-auth",
-    "monorepo"
-  ],
+  "dependencies": {
+    "@cloudflare/workers-types": "^4.20260128.0",
+    "@hono/zod-validator": "^0.7.6",
+    "better-auth": "^1.4.17",
+    "zod": "^4.3.6"
+  },
   "devDependencies": {
     "bun-types": "latest",
     "concurrently": "^9.2.1",
@@ -31,11 +40,5 @@
   },
   "peerDependencies": {
     "typescript": "^5.9.3"
-  },
-  "dependencies": {
-    "@cloudflare/workers-types": "^4.20260128.0",
-    "@hono/zod-validator": "^0.7.6",
-    "better-auth": "^1.4.17",
-    "zod": "^4.3.6"
   }
 }

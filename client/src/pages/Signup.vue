@@ -9,7 +9,15 @@
 
       <div class="stack-quarter">
         <label for="name">Name</label>
-        <input type="text" id="name" autofocus maxlength="50" minlength="2" v-model="name" required />
+        <input
+          type="text"
+          id="name"
+          autofocus
+          maxlength="50"
+          minlength="2"
+          v-model="name"
+          required
+        />
       </div>
 
       <div class="stack-quarter">
@@ -19,7 +27,14 @@
 
       <div class="stack-quarter">
         <label for="password">Password</label>
-        <input type="password" id="password" maxlength="50" minlength="8" v-model="password" required />
+        <input
+          type="password"
+          id="password"
+          maxlength="50"
+          minlength="8"
+          v-model="password"
+          required
+        />
       </div>
 
       <button type="submit" :disabled="isSigningUp">

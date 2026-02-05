@@ -1,12 +1,12 @@
 export type ApiResponse = {
   message: string;
   success: true;
-}
+};
 
 export type ApiErrorResponse = {
   error: string;
   message?: string;
-}
+};
 
 export type UserRole = 'user' | 'admin';
 
