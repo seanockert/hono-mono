@@ -15,7 +15,7 @@
     "format:check": "oxfmt --ignore-path ../.gitignore --check ."
   },
   "dependencies": {
-    "better-auth": "^1.4.17",
+    "better-auth": "^1.5.4",
     "shared": "workspace:*",
     "vue": "^3.5.27"
   },

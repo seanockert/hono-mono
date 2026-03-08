@@ -14,9 +14,9 @@
     "format:check": "oxfmt --ignore-path ../.gitignore --check ."
   },
   "dependencies": {
-    "better-auth": "^1.4.17",
-    "hono": "^4.11.7",
-    "kysely": "^0.28.10",
+    "better-auth": "^1.5.4",
+    "hono": "^4.12.5",
+    "kysely": "^0.28.11",
     "kysely-d1": "^0.4.0",
     "shared": "workspace:*",
     "zod": "^4.3.6"

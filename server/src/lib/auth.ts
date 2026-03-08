@@ -60,3 +60,6 @@ const createAuth = (env?: CloudflareBindings) => {
 };
 
 export { createAuth };
+
+// Used by Better Auth CLI for migrations (local SQLite)
+export const auth = createAuth();
