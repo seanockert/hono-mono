@@ -4,7 +4,6 @@
   "scripts": {
     "dev": "bun run --hot src/index.ts",
     "deploy": "bunx wrangler deploy",
-    "deploy:dev": "bunx wrangler deploy",
     "lint": "oxlint --ignore-path ../.gitignore .",
     "format": "oxfmt --ignore-path ../.gitignore .",
     "format:check": "oxfmt --ignore-path ../.gitignore --check ."

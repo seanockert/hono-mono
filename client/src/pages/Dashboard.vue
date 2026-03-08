@@ -31,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { authClient } from '../lib/auth-client';
+import { authClient, clearStoredToken } from '../lib/auth-client';
 import { computed, ref } from 'vue';
 import AuthTest from '../components/AuthTest.vue';
 import UserList from '../components/UserList.vue';
@@ -75,6 +75,7 @@ const handleUpdateName = async (e: Event) => {
 };
 
 const handleSignOut = async () => {
+  clearStoredToken();
   await authClient.signOut();
   // Navigation to login is handled automatically by App.vue watchEffect
 };
