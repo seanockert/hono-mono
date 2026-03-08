@@ -1,14 +1,10 @@
 {
   "name": "server",
   "version": "0.0.1",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
   "scripts": {
-    "build": "bun run esbuild.config.js",
-    "build:prod": "cross-env NODE_ENV=production bun run esbuild.config.js",
     "dev": "bun run --hot src/index.ts",
-    "deploy": "bun run build:prod && wrangler deploy",
-    "deploy:dev": "bun run build && wrangler deploy",
+    "deploy": "bunx wrangler deploy",
+    "deploy:dev": "bunx wrangler deploy",
     "lint": "oxlint --ignore-path ../.gitignore .",
     "format": "oxfmt --ignore-path ../.gitignore .",
     "format:check": "oxfmt --ignore-path ../.gitignore --check ."
@@ -22,7 +18,6 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@types/bun": "latest",
-    "esbuild": "^0.24.2"
+    "@types/bun": "latest"
   }
 }

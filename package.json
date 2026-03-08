@@ -20,9 +20,9 @@
   ],
   "scripts": {
     "dev": "concurrently \"cd shared && bun run dev\" \"cd server && bun run dev\" \"cd client && bun run dev\"",
-    "build": "cd shared && bun run build && cd ../server && bun run build && cd ../client && bun run build",
+    "build": "cd shared && bun run build && cd ../client && bun run build",
     "deploy": "cd server && bun run deploy && cd ../client && bun run deploy",
-    "postinstall": "cd shared && bun run build && cd ../server && bun run build",
+    "postinstall": "cd shared && bun run build",
     "lint": "oxlint --ignore-path .gitignore .",
     "format": "oxfmt --ignore-path .gitignore .",
     "format:check": "oxfmt --ignore-path .gitignore --check ."
@@ -35,8 +35,7 @@
   },
   "devDependencies": {
     "bun-types": "latest",
-    "concurrently": "^9.2.1",
-    "cross-env": "^10.1.0"
+    "concurrently": "^9.2.1"
   },
   "peerDependencies": {
     "typescript": "^5.9.3"

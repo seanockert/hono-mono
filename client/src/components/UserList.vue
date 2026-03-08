@@ -70,7 +70,7 @@ const errorMessage = 'Failed to fetch users';
 
 const checkAdminRole = async () => {
   await authClient.admin.hasPermission({
-    permission: {
+    permissions: {
       user: ['delete'],
     },
   });
