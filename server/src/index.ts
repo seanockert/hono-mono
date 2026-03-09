@@ -7,7 +7,7 @@ import type { User } from 'shared';
 export type CloudflareBindings = {
   BETTER_AUTH_SECRET?: string;
   BETTER_AUTH_URL?: string;
-  CLIENT_URL?: string;
+  CLIENT_URLS?: string;
   DATABASE?: D1Database;
   GITHUB_CLIENT_ID?: string;
   GITHUB_CLIENT_SECRET?: string;

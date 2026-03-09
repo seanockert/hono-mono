@@ -9,9 +9,11 @@ const createAuth = (env?: CloudflareBindings) => {
 
   // Running on Cloudflare Workers
   if (isCloudflare) {
-    if (!env.BETTER_AUTH_SECRET || !env.BETTER_AUTH_URL || !env.CLIENT_URL) {
+    if (!env.BETTER_AUTH_SECRET || !env.BETTER_AUTH_URL || !env.CLIENT_URLS) {
       throw new Error('Missing required environment variables');
     }
+
+    const trustedOrigins = [env.BETTER_AUTH_URL, ...env.CLIENT_URLS.split(',')];
 
     const db = new Kysely({
       dialect: new D1Dialect({
@@ -36,7 +38,7 @@ const createAuth = (env?: CloudflareBindings) => {
       },
       baseURL: env.BETTER_AUTH_URL,
       secret: env.BETTER_AUTH_SECRET,
-      trustedOrigins: [env.BETTER_AUTH_URL, env.CLIENT_URL],
+      trustedOrigins,
       advanced: {
         defaultCookieAttributes: {
           sameSite: 'none',
@@ -55,7 +57,7 @@ const createAuth = (env?: CloudflareBindings) => {
     database: sqlite,
     baseURL: process.env.BETTER_AUTH_URL as string,
     secret: process.env.BETTER_AUTH_SECRET as string,
-    trustedOrigins: [process.env.BETTER_AUTH_URL as string, process.env.CLIENT_URL as string],
+    trustedOrigins: [process.env.BETTER_AUTH_URL as string, ...(process.env.CLIENT_URLS?.split(',') ?? [])],
   });
 };
 
