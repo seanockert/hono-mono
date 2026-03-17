@@ -4,7 +4,7 @@
       <h1>Login</h1>
     </header>
 
-    <form @submit="handleLogin" class="stack">
+    <form @submit.prevent="handleLogin" class="stack">
       <div v-if="errorMessage" class="error-message">
         {{ errorMessage }}
       </div>
@@ -56,8 +56,7 @@ watch([email, password], () => {
   }
 });
 
-const handleLogin = async (e: Event) => {
-  e.preventDefault();
+const handleLogin = async () => {
   errorMessage.value = '';
   isLoggingIn.value = true;
 

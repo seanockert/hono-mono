@@ -58,22 +58,28 @@ import { ref, onMounted, watch } from 'vue';
 import { authClient } from '../lib/auth-client';
 import type { User, UserRole } from 'shared';
 
+type ListedUser = Omit<User, 'role'> & { role?: string };
+
 const limit = 100;
-const users = ref<User[]>([]);
+const users = ref<ListedUser[]>([]);
 const isLoading = ref(false);
 const error = ref<string>('');
 const selectedRole = ref<string>('');
 const availableRoles: UserRole[] = ['admin', 'user'];
 const deletingUserId = ref<string | null>(null);
-
-const errorMessage = 'Failed to fetch users';
+const hasPermission = ref(true);
+const fetchErrorMessage = 'Failed to fetch users';
 
 const checkAdminRole = async () => {
-  await authClient.admin.hasPermission({
+  const result = await authClient.admin.hasPermission({
     permissions: {
       user: ['delete'],
     },
   });
+  if (result.error) {
+    hasPermission.value = false;
+    error.value = 'You do not have permission to manage users';
+  }
 };
 
 const getUsers = async () => {
@@ -93,12 +99,12 @@ const getUsers = async () => {
     const { data, error: fetchError } = await authClient.admin.listUsers({ query });
 
     if (fetchError) {
-      error.value = fetchError.message || errorMessage;
+      error.value = fetchError.message || fetchErrorMessage;
     } else {
       users.value = data?.users || [];
     }
   } catch (err) {
-    error.value = errorMessage;
+    error.value = fetchErrorMessage;
   } finally {
     isLoading.value = false;
   }
@@ -132,7 +138,9 @@ watch(selectedRole, getUsers);
 
 onMounted(async () => {
   await checkAdminRole();
-  await getUsers();
+  if (hasPermission.value) {
+    await getUsers();
+  }
 });
 </script>
 

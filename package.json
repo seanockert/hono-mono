@@ -19,7 +19,7 @@
     "./shared"
   ],
   "scripts": {
-    "dev": "concurrently \"cd shared && bun run dev\" \"cd server && bun run dev\" \"cd client && bun run dev\"",
+    "dev": "bun run --filter '*' dev",
     "build": "cd shared && bun run build && cd ../client && bun run build",
     "deploy": "cd server && bun run deploy && cd ../client && bun run deploy",
     "postinstall": "cd shared && bun run build",
@@ -34,8 +34,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "bun-types": "latest",
-    "concurrently": "^9.2.1"
+    "bun-types": "latest"
   },
   "peerDependencies": {
     "typescript": "^5.9.3"

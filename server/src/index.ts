@@ -1,39 +1,48 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import type { D1Database } from '@cloudflare/workers-types';
-import { createAuth } from './lib/auth';
+import { createAuth, parseUrlList } from './lib/auth';
 import type { User } from 'shared';
 
-export type CloudflareBindings = {
+export type AppEnv = {
   BETTER_AUTH_SECRET?: string;
   BETTER_AUTH_URL?: string;
   CLIENT_URLS?: string;
-  DATABASE?: D1Database;
+  DATABASE?: unknown;
   GITHUB_CLIENT_ID?: string;
   GITHUB_CLIENT_SECRET?: string;
 };
 
-const app = new Hono<{ Bindings: CloudflareBindings }>();
+/** Merge Cloudflare bindings (c.env) with process.env for Bun/Node */
+export const getEnv = (bindings: AppEnv): AppEnv => ({
+  ...Object.fromEntries(
+    Object.keys(bindings).length > 0
+      ? Object.entries(bindings)
+      : Object.entries(process.env).filter(([k]) =>
+          ['BETTER_AUTH_SECRET', 'BETTER_AUTH_URL', 'CLIENT_URLS', 'DATABASE', 'GITHUB_CLIENT_ID', 'GITHUB_CLIENT_SECRET'].includes(k),
+        ),
+  ),
+});
 
-// Cache auth instance per environment
-let authInstance: ReturnType<typeof createAuth> | null = null;
+const app = new Hono<{ Bindings: AppEnv }>();
 
-const getAuth = (env: CloudflareBindings) => {
-  if (!authInstance) {
-    authInstance = createAuth(env);
-  }
-  return authInstance;
-};
+app.use('*', async (c, next) => {
+  const env = getEnv(c.env);
+  const origins: string[] = [];
+  if (env.BETTER_AUTH_URL) origins.push(env.BETTER_AUTH_URL);
+  if (env.CLIENT_URLS) origins.push(...parseUrlList(env.CLIENT_URLS));
 
-app.use(
-  '*',
-  cors({
-    origin: (origin) => origin || '*',
+  const corsMiddleware = cors({
+    origin: (origin) => {
+      if (origins.length === 0) return origin || '*';
+      return origins.includes(origin) ? origin : '';
+    },
     credentials: true,
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
-  }),
-);
+  });
+
+  return corsMiddleware(c, next);
+});
 
 // Base route
 app.get('/', (c) => c.text('Hola!'));
@@ -41,23 +50,17 @@ app.get('/', (c) => c.text('Hola!'));
 // Auth routes
 app.all('/api/auth/*', async (c) => {
   try {
-    const auth = getAuth(c.env);
+    const auth = createAuth(getEnv(c.env));
     return await auth.handler(c.req.raw);
   } catch (error) {
     console.error('Auth error:', error);
-    return c.json(
-      {
-        error: 'Internal server error',
-        message: error instanceof Error ? error.message : 'Unknown error',
-      },
-      500,
-    );
+    return c.json({ error: 'Internal server error' }, 500);
   }
 });
 
 // Protected endpoint example
 app.get('/api/protected', async (c) => {
-  const auth = getAuth(c.env);
+  const auth = createAuth(getEnv(c.env));
   const session = await auth.api.getSession({
     headers: c.req.raw.headers,
   });

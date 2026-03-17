@@ -57,6 +57,6 @@ The deployment process:
 Run the commands to setup authentication using Sqlite DB
 
 ```sh
-bunx --bun @better-auth/cli@1.3.4 generate --config src/lib/auth.ts
-bunx --bun @better-auth/cli@1.3.4 migrate --config src/lib/auth.ts
+bunx --bun @better-auth/cli@1.3.4 generate --config src/lib/auth.cli.ts
+bunx --bun @better-auth/cli@1.3.4 migrate --config src/lib/auth.cli.ts
 ```

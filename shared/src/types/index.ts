@@ -5,6 +5,7 @@ export type ApiResponse = {
 
 export type ApiErrorResponse = {
   error: string;
+  success: false;
   message?: string;
 };
 
@@ -16,7 +17,7 @@ export interface User {
   email: string;
   emailVerified?: boolean;
   image?: string | null;
-  role?: string;
+  role?: UserRole;
   createdAt?: Date;
   updatedAt?: Date;
 }

@@ -1,41 +1,54 @@
 import { betterAuth } from 'better-auth';
+import { admin, bearer } from 'better-auth/plugins';
 import { Kysely } from 'kysely';
 import { D1Dialect } from 'kysely-d1';
-import type { CloudflareBindings } from '../index';
-import { authConfig } from '../../better-auth.config';
+import type { AppEnv } from '../index';
 
-const createAuth = (env?: CloudflareBindings) => {
-  const isCloudflare = !!env?.DATABASE;
+export const authConfig = {
+  emailAndPassword: { enabled: true },
+  plugins: [admin(), bearer()],
+  user: {
+    additionalFields: {
+      role: {
+        type: 'string' as const,
+        required: false,
+        defaultValue: 'user',
+        input: false,
+      },
+    },
+  },
+};
 
-  // Running on Cloudflare Workers
-  if (isCloudflare) {
-    if (!env.BETTER_AUTH_SECRET || !env.BETTER_AUTH_URL || !env.CLIENT_URLS) {
-      throw new Error('Missing required environment variables');
-    }
+export const parseUrlList = (urls?: string): string[] =>
+  urls ? urls.split(',').map((u) => u.trim()).filter(Boolean) : [];
 
-    const trustedOrigins = [env.BETTER_AUTH_URL, ...env.CLIENT_URLS.split(',')];
+export const createAuth = (env: AppEnv) => {
+  if (!env.BETTER_AUTH_SECRET || !env.BETTER_AUTH_URL) {
+    throw new Error('Missing required environment variables: BETTER_AUTH_URL and BETTER_AUTH_SECRET');
+  }
 
+  const trustedOrigins = [env.BETTER_AUTH_URL, ...parseUrlList(env.CLIENT_URLS)];
+
+  const socialProviders: Record<string, { clientId: string; clientSecret: string }> = {};
+  if (env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET) {
+    socialProviders.github = {
+      clientId: env.GITHUB_CLIENT_ID,
+      clientSecret: env.GITHUB_CLIENT_SECRET,
+    };
+  }
+
+  // Cloudflare D1
+  if (env.DATABASE) {
     const db = new Kysely({
       dialect: new D1Dialect({
-        database: env.DATABASE!,
+        database: env.DATABASE as import('@cloudflare/workers-types').D1Database,
       }),
     });
-
-    const socialProviders: any = {};
-    if (env.GITHUB_CLIENT_ID && env.GITHUB_CLIENT_SECRET) {
-      socialProviders.github = {
-        clientId: env.GITHUB_CLIENT_ID,
-        clientSecret: env.GITHUB_CLIENT_SECRET,
-      };
-    }
 
     return betterAuth({
       ...authConfig,
       socialProviders,
-      database: {
-        db,
-        type: 'sqlite',
-      },
+      database: { db, type: 'sqlite' },
       baseURL: env.BETTER_AUTH_URL,
       secret: env.BETTER_AUTH_SECRET,
       trustedOrigins,
@@ -48,20 +61,16 @@ const createAuth = (env?: CloudflareBindings) => {
     });
   }
 
-  // Local development with Bun SQLite
+  // Bun SQLite (local dev or Bun deployment)
   const { Database } = require('bun:sqlite');
   const sqlite = new Database('src/auth.db');
 
   return betterAuth({
     ...authConfig,
+    socialProviders,
     database: sqlite,
-    baseURL: process.env.BETTER_AUTH_URL as string,
-    secret: process.env.BETTER_AUTH_SECRET as string,
-    trustedOrigins: [process.env.BETTER_AUTH_URL as string, ...(process.env.CLIENT_URLS?.split(',') ?? [])],
+    baseURL: env.BETTER_AUTH_URL,
+    secret: env.BETTER_AUTH_SECRET,
+    trustedOrigins,
   });
 };
-
-export { createAuth };
-
-// Used by Better Auth CLI for migrations (local SQLite)
-export const auth = createAuth();

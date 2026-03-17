@@ -29,8 +29,22 @@ const ERROR_MESSAGES = {
   unexpected: 'An unexpected error occurred. Try again.',
 } as const;
 
-export const getErrorMessage = (error: any): string => {
-  if (!error?.message) {
+export const getErrorMessage = (error: { code?: string; message?: string } | null): string => {
+  if (!error) {
+    return ERROR_MESSAGES.unexpected;
+  }
+
+  // Prefer error code matching when available
+  if (error.code) {
+    const code = error.code.toLowerCase();
+    for (const [key, value] of Object.entries(ERROR_MESSAGES)) {
+      if (code.includes(key)) {
+        return value;
+      }
+    }
+  }
+
+  if (!error.message) {
     return ERROR_MESSAGES.unexpected;
   }
 
