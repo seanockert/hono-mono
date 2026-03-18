@@ -8,12 +8,18 @@ A full-stack TypeScript monorepo starter with shared types, using Bun, Hono, Vue
 - **Backend**: Hono API, deployed to Cloudflare Workers
 - **Shared**: Common TypeScript types shared between frontend and backend
 - **Auth**: Better Auth with Cloudflare D1 database
+- **Items model**: Base model for creating CRUD items
 
 ## Demo
 
 Create a user account and login: https://hono-mono.seanockert.com
 
 Backend API hosted at https://hono-mono-app.seanockert.workers.dev
+
+<img width="768" alt="dashboard" src="https://github.com/user-attachments/assets/3e99a011-fae0-41f6-80d8-31954c11b2d4" />
+
+<img width="768" alt="items-list" src="https://github.com/user-attachments/assets/8b3ae36f-41f0-46ff-8b26-2dd3e0516436" />
+
 
 ## Development
 
@@ -37,45 +43,21 @@ This will start:
 
 ## Building
 
-Build all packages:
+Build everything:
 
 ```bash
 bun run build
 ```
 
-Build individual packages:
-
-```bash
-bun run build:server  # Backend only
-bun run build:client  # Frontend only
-bun run build:shared  # Shared types only
-```
-
 ## Deployment
-
-### Backend (Cloudflare Workers)
-
-```bash
-# Deploy to production
-bun run deploy:server
-# or
-cd server && bun run deploy
-```
-
-### Frontend (Cloudflare Pages)
-
-```bash
-# Deploy to production
-bun run deploy:client
-# or
-cd client && bun run deploy
-```
-
-### Deploy Both
 
 ```bash
 bun run deploy
 ```
+
+This will deploy 
+1. the Frontend (client) to Cloudflare Pages
+2. the Backend (server) to Cloudflare Workers
 
 ## Adding a New Model
 
