@@ -24,6 +24,10 @@
       </div>
     </main>
 
+    <div>
+      <a href="/items" @click.prevent="navigate('items')">View Items &rarr;</a>
+    </div>
+
     <AuthTest />
 
     <UserList v-if="session?.user.role === 'admin'" />
@@ -33,8 +37,11 @@
 <script setup lang="ts">
 import { authClient, clearStoredToken } from '../lib/auth-client';
 import { computed, ref } from 'vue';
+import { useRouter } from '../lib/simple-router';
 import AuthTest from '../components/AuthTest.vue';
 import UserList from '../components/UserList.vue';
+
+const { navigate } = useRouter();
 
 const sessionData = authClient.useSession();
 const session = computed(() => sessionData.value.data);

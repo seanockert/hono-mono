@@ -1,0 +1,368 @@
+#!/usr/bin/env bun
+/**
+ * Model scaffolder — generates CRUD boilerplate for a new model.
+ *
+ * Usage:
+ *   bun run scripts/generate-model.ts <modelName>
+ *
+ * Example:
+ *   bun run scripts/generate-model.ts post
+ *   bun run scripts/generate-model.ts product
+ */
+
+import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+
+const modelArg = process.argv[2];
+
+if (!modelArg) {
+  console.error('Usage: bun run scripts/generate-model.ts <modelName>');
+  console.error('Example: bun run scripts/generate-model.ts post');
+  process.exit(1);
+}
+
+const model = modelArg.toLowerCase();
+const Model = model.charAt(0).toUpperCase() + model.slice(1);
+const models = `${model}s`;
+const Models = `${Model}s`;
+const root = join(import.meta.dir, '..');
+const timestamp = new Date().toISOString().replace(/\.\d{3}Z$/, '').replace(/[T:]/g, '-');
+
+const writeFile = (path: string, content: string) => {
+  const dir = dirname(path);
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+  writeFileSync(path, content, 'utf-8');
+  console.log(`  Created: ${path.replace(root + '/', '')}`);
+};
+
+// ─── 1. SQL Migration ────────────────────────────────────────────────────────
+
+const sqlPath = join(root, `server/migrations/${timestamp}_create_${models}.sql`);
+const sqlContent = `CREATE TABLE IF NOT EXISTS "${model}" (
+  "id"        TEXT NOT NULL PRIMARY KEY,
+  "title"     TEXT NOT NULL,
+  "slug"      TEXT NOT NULL UNIQUE,
+  "content"   TEXT,
+  "status"    TEXT NOT NULL DEFAULT 'draft',
+  "authorId"  TEXT REFERENCES "user" ("id") ON DELETE SET NULL,
+  "createdAt" TEXT NOT NULL,
+  "updatedAt" TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS "${model}_slug_idx"      ON "${model}" ("slug");
+CREATE INDEX IF NOT EXISTS "${model}_status_idx"    ON "${model}" ("status");
+CREATE INDEX IF NOT EXISTS "${model}_createdAt_idx" ON "${model}" ("createdAt");
+`;
+
+// ─── 2. Server Route ─────────────────────────────────────────────────────────
+
+const routePath = join(root, `server/src/routes/${models}.ts`);
+const routeContent = `import { Hono } from 'hono';
+import { zValidator } from '@hono/zod-validator';
+import { z } from 'zod';
+import { createDb } from '../lib/db';
+import { requireAuth, type AuthVariables } from '../lib/middleware';
+import { getEnv, type AppEnv } from '../lib/env';
+import { slugify, UUID_REGEX } from '../lib/utils';
+
+// TODO: Add ${Model}Table to AppDatabase in server/src/lib/db.ts:
+// export interface ${Model}Table { id, title, slug, content, status, authorId, createdAt, updatedAt }
+// export interface AppDatabase { item: ItemTable; ${model}: ${Model}Table }
+
+const listSchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  search: z.string().optional(),
+  status: z.enum(['draft', 'published', 'archived']).optional(),
+  sortBy: z.enum(['createdAt', 'updatedAt', 'title']).default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+});
+
+const createSchema = z.object({
+  title: z.string().min(1),
+  content: z.string().optional(),
+  status: z.enum(['draft', 'published', 'archived']).default('draft'),
+});
+
+const updateSchema = z.object({
+  title: z.string().min(1).optional(),
+  slug: z.string().optional(),
+  content: z.string().nullable().optional(),
+  status: z.enum(['draft', 'published', 'archived']).optional(),
+});
+
+const ${models} = new Hono<{ Bindings: AppEnv; Variables: AuthVariables }>();
+
+${models}.get('/', zValidator('query', listSchema), async (c) => {
+  const { page, limit, search, status, sortBy, sortOrder } = c.req.valid('query');
+  const db = createDb(getEnv(c.env));
+  const offset = (page - 1) * limit;
+
+  let query = db.selectFrom('${model}').selectAll();
+  let countQuery = db
+    .selectFrom('${model}')
+    .select((eb) => eb.fn.countAll<number>().as('count'));
+
+  if (search) {
+    const pattern = \`%\${search}%\`;
+    query = query.where((eb) =>
+      eb.or([eb('title', 'like', pattern), eb('content', 'like', pattern)]),
+    );
+    countQuery = countQuery.where((eb) =>
+      eb.or([eb('title', 'like', pattern), eb('content', 'like', pattern)]),
+    );
+  }
+
+  if (status) {
+    query = query.where('status', '=', status);
+    countQuery = countQuery.where('status', '=', status);
+  }
+
+  query = query.orderBy(sortBy, sortOrder).limit(limit).offset(offset);
+
+  const [rows, countRow] = await Promise.all([query.execute(), countQuery.executeTakeFirst()]);
+  const total = Number(countRow?.count ?? 0);
+
+  return c.json({ data: rows, total, page, limit, totalPages: Math.ceil(total / limit) });
+});
+
+${models}.get('/:idOrSlug', async (c) => {
+  const idOrSlug = c.req.param('idOrSlug');
+  const db = createDb(getEnv(c.env));
+
+  const ${model} = UUID_REGEX.test(idOrSlug)
+    ? await db.selectFrom('${model}').selectAll().where('id', '=', idOrSlug).executeTakeFirst()
+    : await db.selectFrom('${model}').selectAll().where('slug', '=', idOrSlug).executeTakeFirst();
+
+  if (!${model}) return c.json({ error: 'Not found' }, 404);
+  return c.json(${model});
+});
+
+${models}.post('/', requireAuth, zValidator('json', createSchema), async (c) => {
+  const { title, content, status } = c.req.valid('json');
+  const session = c.get('session');
+  const db = createDb(getEnv(c.env));
+  const now = new Date().toISOString();
+
+  let slug = slugify(title);
+  let existing = await db.selectFrom('${model}').select('id').where('slug', '=', slug).executeTakeFirst();
+  let counter = 2;
+  while (existing) {
+    slug = \`\${slugify(title)}-\${counter++}\`;
+    existing = await db.selectFrom('${model}').select('id').where('slug', '=', slug).executeTakeFirst();
+  }
+
+  const id = crypto.randomUUID();
+  await db
+    .insertInto('${model}')
+    .values({ id, title, slug, content: content ?? null, status, authorId: session.user.id, createdAt: now, updatedAt: now })
+    .execute();
+
+  const ${model} = await db.selectFrom('${model}').selectAll().where('id', '=', id).executeTakeFirst();
+  return c.json(${model}, 201);
+});
+
+${models}.put('/:id', requireAuth, zValidator('json', updateSchema), async (c) => {
+  const id = c.req.param('id');
+  const updates = c.req.valid('json');
+  const db = createDb(getEnv(c.env));
+
+  const existing = await db.selectFrom('${model}').selectAll().where('id', '=', id).executeTakeFirst();
+  if (!existing) return c.json({ error: 'Not found' }, 404);
+
+  const now = new Date().toISOString();
+  const updateData: Record<string, string | null> = { updatedAt: now };
+
+  if (updates.title !== undefined) updateData.title = updates.title;
+  if (updates.content !== undefined) updateData.content = updates.content ?? null;
+  if (updates.status !== undefined) updateData.status = updates.status;
+
+  if (updates.slug !== undefined) {
+    updateData.slug = updates.slug;
+  } else if (updates.title !== undefined) {
+    let slug = slugify(updates.title);
+    let conflict = await db
+      .selectFrom('${model}')
+      .select('id')
+      .where('slug', '=', slug)
+      .where('id', '!=', id)
+      .executeTakeFirst();
+    let counter = 2;
+    while (conflict) {
+      slug = \`\${slugify(updates.title)}-\${counter++}\`;
+      conflict = await db
+        .selectFrom('${model}')
+        .select('id')
+        .where('slug', '=', slug)
+        .where('id', '!=', id)
+        .executeTakeFirst();
+    }
+    updateData.slug = slug;
+  }
+
+  await db.updateTable('${model}').set(updateData).where('id', '=', id).execute();
+  const ${model} = await db.selectFrom('${model}').selectAll().where('id', '=', id).executeTakeFirst();
+  return c.json(${model});
+});
+
+${models}.delete('/:id', requireAuth, async (c) => {
+  const id = c.req.param('id');
+  const db = createDb(getEnv(c.env));
+
+  const existing = await db.selectFrom('${model}').select('id').where('id', '=', id).executeTakeFirst();
+  if (!existing) return c.json({ error: 'Not found' }, 404);
+
+  await db.deleteFrom('${model}').where('id', '=', id).execute();
+  return new Response(null, { status: 204 });
+});
+
+export default ${models};
+`;
+
+// ─── 3. Shared Type ──────────────────────────────────────────────────────────
+
+const typePath = join(root, `shared/src/types/${model}.ts`);
+const typeContent = `export type ${Model}Status = 'draft' | 'published' | 'archived';
+
+export interface ${Model} {
+  id: string;
+  title: string;
+  slug: string;
+  content: string | null;
+  status: ${Model}Status;
+  authorId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ${Model}ListParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: ${Model}Status;
+  sortBy?: 'createdAt' | 'updatedAt' | 'title';
+  sortOrder?: 'asc' | 'desc';
+};
+`;
+
+// ─── 4. Vue Composable ───────────────────────────────────────────────────────
+
+const composablePath = join(root, `client/src/composables/use${Models}.ts`);
+const composableContent = `import { ref, onMounted, watch } from 'vue';
+import type { ${Model}, ${Model}ListParams } from 'shared';
+import { SERVER_URL, authHeaders } from '../lib/config';
+
+// TODO: Export ${Model} and ${Model}ListParams from shared/src/types/index.ts
+
+export const use${Models} = () => {
+  const ${models} = ref<${Model}[]>([]);
+  const total = ref(0);
+  const isLoading = ref(false);
+  const error = ref<string>('');
+  const params = ref<${Model}ListParams>({ page: 1, limit: 20 });
+
+  const fetch${Models} = async () => {
+    isLoading.value = true;
+    error.value = '';
+
+    try {
+      const query = new URLSearchParams();
+      const p = params.value;
+      if (p.page) query.set('page', String(p.page));
+      if (p.limit) query.set('limit', String(p.limit));
+      if (p.search) query.set('search', p.search);
+      if (p.status) query.set('status', p.status);
+      if (p.sortBy) query.set('sortBy', p.sortBy);
+      if (p.sortOrder) query.set('sortOrder', p.sortOrder);
+
+      const res = await fetch(\`\${SERVER_URL}/api/${models}?\${query}\`, {
+        credentials: 'include',
+      });
+
+      if (!res.ok) throw new Error(\`Request failed: \${res.status}\`);
+
+      const data = await res.json();
+      ${models}.value = data.data;
+      total.value = data.total;
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to fetch ${models}';
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  const create${Model} = async (data: {
+    title: string;
+    content?: string;
+    status?: ${Model}['status'];
+  }) => {
+    const res = await fetch(\`\${SERVER_URL}/api/${models}\`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(\`Failed to create ${model}: \${res.status}\`);
+    await fetch${Models}();
+    return res.json() as Promise<${Model}>;
+  };
+
+  const update${Model} = async (
+    id: string,
+    data: Partial<Pick<${Model}, 'title' | 'content' | 'status'>> & { slug?: string },
+  ) => {
+    const res = await fetch(\`\${SERVER_URL}/api/${models}/\${id}\`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', ...authHeaders() },
+      credentials: 'include',
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(\`Failed to update ${model}: \${res.status}\`);
+    await fetch${Models}();
+    return res.json() as Promise<${Model}>;
+  };
+
+  const delete${Model} = async (id: string) => {
+    const res = await fetch(\`\${SERVER_URL}/api/${models}/\${id}\`, {
+      method: 'DELETE',
+      headers: authHeaders(),
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error(\`Failed to delete ${model}: \${res.status}\`);
+    await fetch${Models}();
+  };
+
+  watch(params, fetch${Models}, { deep: true });
+  onMounted(fetch${Models});
+
+  return { ${models}, total, isLoading, error, params, fetch${Models}, create${Model}, update${Model}, delete${Model} };
+};
+`;
+
+// ─── Write all files ─────────────────────────────────────────────────────────
+
+console.log(`\nScaffolding model: ${Model}\n`);
+writeFile(sqlPath, sqlContent);
+writeFile(routePath, routeContent);
+writeFile(typePath, typeContent);
+writeFile(composablePath, composableContent);
+
+console.log(`
+Done! Complete these manual steps:
+
+  1. Add ${Model}Table to AppDatabase in server/src/lib/db.ts:
+       ${Model}Table interface: { id, title, slug, content, status, authorId, createdAt, updatedAt }
+       Add \`${model}: ${Model}Table\` to AppDatabase
+
+  2. Mount the route in server/src/index.ts:
+       import ${models} from './routes/${models}';
+       app.route('/api/${models}', ${models});
+
+  3. Export types from shared/src/types/index.ts:
+       export type { ${Model}, ${Model}Status, ${Model}ListParams } from './${model}';
+
+  4. Run the migration:
+       cd server && bun run migrate
+       # or for production D1:
+       bunx wrangler d1 execute hono-mono --file=server/migrations/<timestamp>_create_${models}.sql
+`);

@@ -1,12 +1,11 @@
 import { createAuthClient } from 'better-auth/vue';
 import { adminClient, inferAdditionalFields } from 'better-auth/client/plugins';
-
-const TOKEN_KEY = 'better-auth.token';
+import { TOKEN_KEY, SERVER_URL } from './config';
 
 export const clearStoredToken = () => localStorage.removeItem(TOKEN_KEY);
 
 export const authClient = createAuthClient({
-  baseURL: import.meta.env.VITE_SERVER_URL || 'http://localhost:3000',
+  baseURL: SERVER_URL,
   fetchOptions: {
     onResponse(context) {
       const token = context.response.headers.get('set-auth-token');

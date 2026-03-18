@@ -4,38 +4,63 @@ import { ref, computed } from 'vue';
  * Basic client router for demo purposes. Replace with a more robust router.
  */
 
-// Route configuration
-const routes = {
+// Static route configuration
+const staticRoutes = {
   '/': 'login',
   '/signup': 'signup',
   '/dashboard': 'dashboard',
+  '/items': 'items',
 } as const;
 
-export type Route = (typeof routes)[keyof typeof routes];
+type StaticRoute = (typeof staticRoutes)[keyof typeof staticRoutes];
+export type Route = StaticRoute | 'item';
+
+export type RouteParams = { slug?: string };
 
 const currentRoute = ref<Route>('login');
+const currentParams = ref<RouteParams>({});
 
-// Get route from current path
-const getRouteFromPath = (): Route => {
-  return routes[window.location.pathname as keyof typeof routes] || 'login';
+// Get route and params from current path
+const getRouteFromPath = (): { route: Route; params: RouteParams } => {
+  const path = window.location.pathname;
+
+  const itemMatch = path.match(/^\/item\/([^/]+)$/);
+  if (itemMatch) {
+    return { route: 'item', params: { slug: itemMatch[1] } };
+  }
+
+  return {
+    route: staticRoutes[path as keyof typeof staticRoutes] || 'login',
+    params: {},
+  };
 };
 
 // Update route from URL changes
 const updateRoute = () => {
-  currentRoute.value = getRouteFromPath();
+  const { route, params } = getRouteFromPath();
+  currentRoute.value = route;
+  currentParams.value = params;
 };
 
 // Init and listen for changes
-currentRoute.value = getRouteFromPath();
+updateRoute();
 window.addEventListener('popstate', updateRoute);
 
 export const useRouter = () => {
   const route = computed(() => currentRoute.value);
+  const params = computed(() => currentParams.value);
 
-  const navigate = (newRoute: Route, replace = false) => {
-    // Find path for route
-    const path =
-      Object.keys(routes).find((key) => routes[key as keyof typeof routes] === newRoute) || '/';
+  const navigate = (newRoute: Route, replace = false, newParams: RouteParams = {}) => {
+    let path: string;
+
+    if (newRoute === 'item' && newParams.slug) {
+      path = `/item/${newParams.slug}`;
+    } else {
+      path =
+        Object.keys(staticRoutes).find(
+          (key) => staticRoutes[key as keyof typeof staticRoutes] === newRoute,
+        ) || '/';
+    }
 
     if (window.location.pathname !== path) {
       if (replace) {
@@ -44,8 +69,9 @@ export const useRouter = () => {
         window.history.pushState({}, '', path);
       }
       currentRoute.value = newRoute;
+      currentParams.value = newParams;
     }
   };
 
-  return { route, navigate };
+  return { route, params, navigate };
 };

@@ -74,8 +74,26 @@ cd client && bun run deploy
 ### Deploy Both
 
 ```bash
-bun run deploy:all
+bun run deploy
 ```
+
+## Adding a New Model
+
+Scaffold a new CRUD model (routes, migration, shared types, Vue composable):
+
+```bash
+bun run scripts/generate-model.ts <modelName>
+# e.g. bun run scripts/generate-model.ts product
+```
+
+Then complete the four steps printed by the script:
+
+1. Add `<Model>Table` to `AppDatabase` in `server/src/lib/db.ts`
+2. Mount the route in `server/src/index.ts`
+3. Re-export the type from `shared/src/types/index.ts`
+4. Run the migration: `cd server && bun run migrate`
+
+The generated route includes paginated list, get by id/slug, create, update, and delete — identical in structure to the built-in `items` model.
 
 ## Configuration
 
