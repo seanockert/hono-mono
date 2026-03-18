@@ -2,11 +2,11 @@
   <div class="stack">
     <header class="inline-between">
       <h1>Items</h1>
-      <a href="/dashboard" @click.prevent="navigate('dashboard')">&larr; Dashboard</a>
+      <a href="/dashboard" @click.prevent="navigate('dashboard')">Dashboard</a>
     </header>
 
-    <form v-if="session" @submit.prevent="handleCreate" class="inline">
-      <input v-model="newTitle" placeholder="New item title" required />
+    <form v-if="session" @submit.prevent="handleCreate" class="inline-quarter">
+      <input v-model="newTitle" placeholder="New item title" autofocus required />
       <button type="submit" :disabled="isCreating">
         {{ isCreating ? 'Adding...' : 'Add' }}
       </button>

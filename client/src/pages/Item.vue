@@ -1,27 +1,21 @@
 <template>
   <div class="stack">
     <header class="inline-between">
-      <h1>{{ item?.title ?? 'Item' }}</h1>
-      <a href="/items" @click.prevent="navigate('items')">&larr; Items</a>
+      <h1>{{ item?.title ?? 'Untitled item' }}</h1>
+      <a href="/items" @click.prevent="navigate('items')">Items</a>
     </header>
 
     <div v-if="isLoading">Loading...</div>
     <div v-else-if="error" class="error-message">{{ error }}</div>
-    <div v-else-if="item" class="stack">
-      <dl>
-        <dt>Slug</dt>
-        <dd>{{ item.slug }}</dd>
-        <dt>Status</dt>
-        <dd>{{ item.status }}</dd>
-        <dt>Created</dt>
-        <dd>{{ new Date(item.createdAt).toLocaleString() }}</dd>
-        <dt>Updated</dt>
-        <dd>{{ new Date(item.updatedAt).toLocaleString() }}</dd>
-      </dl>
-      <div v-if="item.content">
+    <ul v-else-if="item" class="stack-half">
+      <li><div>Slug:</div> {{ item.slug }}</li>
+      <li><div>Status:</div> {{ item.status }}</li>
+      <li><div>Created:</div> {{ new Date(item.createdAt).toLocaleString() }}</li>
+      <li><div>Updated:</div> {{ new Date(item.updatedAt).toLocaleString() }}</li>
+      <li v-if="item.content">
         <p>{{ item.content }}</p>
-      </div>
-    </div>
+      </li>
+    </ul>
   </div>
 </template>
 
@@ -32,3 +26,10 @@ import { useItem } from '../composables/useItems';
 const { params, navigate } = useRouter();
 const { item, isLoading, error } = useItem(() => params.value.slug ?? '');
 </script>
+
+<style scoped>
+ul li {
+  display: flex;
+  gap: var(--size-base);
+}
+</style>
