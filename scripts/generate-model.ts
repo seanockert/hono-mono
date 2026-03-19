@@ -3,14 +3,14 @@
  * Model scaffolder — generates CRUD boilerplate for a new model.
  *
  * Usage:
- *   bun run scripts/generate-model.ts <modelName>
+ *   bun run generate <modelName>
  *
  * Example:
- *   bun run scripts/generate-model.ts post
- *   bun run scripts/generate-model.ts product
+ *   bun run generate post
+ *   bun run generate product
  */
 
-import { writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 
 const modelArg = process.argv[2];
@@ -64,10 +64,6 @@ import { createDb } from '../lib/db';
 import { requireAuth, type AuthVariables } from '../lib/middleware';
 import { getEnv, type AppEnv } from '../lib/env';
 import { slugify, UUID_REGEX } from '../lib/utils';
-
-// TODO: Add ${Model}Table to AppDatabase in server/src/lib/db.ts:
-// export interface ${Model}Table { id, title, slug, content, status, authorId, createdAt, updatedAt }
-// export interface AppDatabase { item: ItemTable; ${model}: ${Model}Table }
 
 const listSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -252,8 +248,6 @@ const composableContent = `import { ref, onMounted, watch } from 'vue';
 import type { ${Model}, ${Model}ListParams } from 'shared';
 import { SERVER_URL, authHeaders } from '../lib/config';
 
-// TODO: Export ${Model} and ${Model}ListParams from shared/src/types/index.ts
-
 export const use${Models} = () => {
   const ${models} = ref<${Model}[]>([]);
   const total = ref(0);
@@ -347,22 +341,110 @@ writeFile(routePath, routeContent);
 writeFile(typePath, typeContent);
 writeFile(composablePath, composableContent);
 
+// ─── Patch A — server/src/lib/db.ts ──────────────────────────────────────────
+
+const dbTsPath = join(root, 'server/src/lib/db.ts');
+let dbTs = readFileSync(dbTsPath, 'utf-8');
+const dbTsOriginal = dbTs;
+
+const tableInterface = `export interface ${Model}Table {
+  id: string;
+  title: string;
+  slug: string;
+  content: string | null;
+  status: string;
+  authorId: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+`;
+
+if (dbTs.includes(`interface ${Model}Table`)) {
+  console.log(`  Skipped: ${Model}Table already in db.ts`);
+} else {
+  dbTs = dbTs.replace('export interface AppDatabase {', tableInterface + 'export interface AppDatabase {');
+  console.log(`  Patched: server/src/lib/db.ts — added ${Model}Table interface`);
+}
+
+const dbEntry = `  ${model}: ${Model}Table;`;
+if (dbTs.includes(dbEntry)) {
+  console.log(`  Skipped: ${model} already in AppDatabase`);
+} else {
+  dbTs = dbTs.replace(/^(export interface AppDatabase \{[^}]*)(\})/ms, `$1${dbEntry}\n$2`);
+  console.log(`  Patched: server/src/lib/db.ts — added ${model} to AppDatabase`);
+}
+
+if (dbTs !== dbTsOriginal) writeFileSync(dbTsPath, dbTs, 'utf-8');
+
+// ─── Patch B — server/src/index.ts ───────────────────────────────────────────
+
+const indexPath = join(root, 'server/src/index.ts');
+let indexTs = readFileSync(indexPath, 'utf-8');
+const indexTsOriginal = indexTs;
+
+const importLine = `import ${models} from './routes/${models}';`;
+if (indexTs.includes(importLine)) {
+  console.log(`  Skipped: ${models} import already in index.ts`);
+} else {
+  indexTs = indexTs.replace(
+    /(import \w+ from '\.\/routes\/[^']+';)(?![\s\S]*import \w+ from '\.\/routes\/)/,
+    `$1\n${importLine}`,
+  );
+  console.log(`  Patched: server/src/index.ts — added ${models} import`);
+}
+
+const routeLine = `app.route('/api/${models}', ${models});`;
+if (indexTs.includes(routeLine)) {
+  console.log(`  Skipped: ${models} route already in index.ts`);
+} else {
+  indexTs = indexTs.replace('export default app;', `${routeLine}\n\nexport default app;`);
+  console.log(`  Patched: server/src/index.ts — mounted /api/${models}`);
+}
+
+if (indexTs !== indexTsOriginal) writeFileSync(indexPath, indexTs, 'utf-8');
+
+// ─── Patch C — shared/src/types/index.ts ─────────────────────────────────────
+
+const sharedTypesPath = join(root, 'shared/src/types/index.ts');
+let sharedTypes = readFileSync(sharedTypesPath, 'utf-8');
+
+const reExport = `export type { ${Model}, ${Model}Status, ${Model}ListParams } from './${model}';`;
+if (sharedTypes.includes(reExport)) {
+  console.log(`  Skipped: ${Model} re-export already in shared/src/types/index.ts`);
+} else {
+  sharedTypes = sharedTypes.trimEnd() + '\n\n' + reExport + '\n';
+  writeFileSync(sharedTypesPath, sharedTypes, 'utf-8');
+  console.log(`  Patched: shared/src/types/index.ts — added ${Model} re-export`);
+}
+
+// ─── Patch D — run migration ──────────────────────────────────────────────────
+
+console.log('  Running migration...');
+const migration = Bun.spawnSync(['bun', 'run', 'migrate'], {
+  cwd: join(root, 'server'),
+  stdout: 'inherit',
+  stderr: 'inherit',
+});
+
+if (migration.exitCode !== 0) {
+  console.error('\n  Migration failed. Check errors above.\n');
+  process.exit(1);
+}
+
 console.log(`
-Done! Complete these manual steps:
+  Done! ${Model} model is ready.
 
-  1. Add ${Model}Table to AppDatabase in server/src/lib/db.ts:
-       ${Model}Table interface: { id, title, slug, content, status, authorId, createdAt, updatedAt }
-       Add \`${model}: ${Model}Table\` to AppDatabase
+  Files created:
+    server/migrations/${timestamp}_create_${models}.sql
+    server/src/routes/${models}.ts
+    shared/src/types/${model}.ts
+    client/src/composables/use${Models}.ts
 
-  2. Mount the route in server/src/index.ts:
-       import ${models} from './routes/${models}';
-       app.route('/api/${models}', ${models});
+  Files patched:
+    server/src/lib/db.ts       (${Model}Table + AppDatabase)
+    server/src/index.ts        (route mount)
+    shared/src/types/index.ts  (re-export)
 
-  3. Export types from shared/src/types/index.ts:
-       export type { ${Model}, ${Model}Status, ${Model}ListParams } from './${model}';
-
-  4. Run the migration:
-       cd server && bun run migrate
-       # or for production D1:
-       bunx wrangler d1 execute hono-mono --file=server/migrations/<timestamp>_create_${models}.sql
+  The API is live at /api/${models}
 `);

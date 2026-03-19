@@ -18,7 +18,7 @@ const route = useRoute();
 watchEffect(() => {
   if (isPending.value) return;
 
-  if (session.value && route.name === 'login') {
+  if (session.value && (route.name === 'login' || route.name === 'signup')) {
     router.push('dashboard');
     return;
   }
