@@ -15,6 +15,7 @@
     "format:check": "oxfmt --ignore-path ../.gitignore --check ."
   },
   "dependencies": {
+    "@kitbag/router": "^0.24.0",
     "better-auth": "^1.5.5",
     "shared": "workspace:*",
     "vue": "^3.5.30"

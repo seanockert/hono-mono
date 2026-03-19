@@ -43,17 +43,15 @@
     </form>
 
     <!-- <button type="button" @click="handleGithubSignup">Sign up with GitHub</button> -->
-    <a href="/login" @click.prevent="navigate('login')">&larr; Back to Login</a>
+    <RouterLink :to="(resolve) => resolve('login')">&larr; Back to Login</RouterLink>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+import { RouterLink } from '@kitbag/router';
 import { authClient } from '../lib/auth-client';
-import { useRouter } from '../lib/simple-router';
 import { getErrorMessage } from '../lib/auth-errors';
-
-const { navigate } = useRouter();
 
 const email = ref('');
 const password = ref('');
