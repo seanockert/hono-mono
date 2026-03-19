@@ -1,8 +1,10 @@
 <template>
   <div class="stack">
     <header class="inline-between">
-      <h1>Login</h1>
+      <h1>Hono Mono</h1>
     </header>
+
+    <h2>Login</h2>
 
     <form @submit.prevent="handleLogin" class="stack">
       <div v-if="errorMessage" class="error-message">

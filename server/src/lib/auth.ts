@@ -63,7 +63,7 @@ export const createAuth = (env: AppEnv) => {
 
   // Bun SQLite (local dev or Bun deployment)
   const { Database } = require('bun:sqlite');
-  const sqlite = new Database('src/auth.db');
+  const sqlite = new Database('src/honomono.db');
 
   return betterAuth({
     ...authConfig,

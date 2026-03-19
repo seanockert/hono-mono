@@ -1,7 +1,7 @@
 :root {
   --color-bg: light-dark(hsl(0, 0%, 100%), hsl(265, 23%, 10%));
   --color-bg-secondary: light-dark(hsl(0, 0%, 94%), hsl(268, 19%, 15%));
-  --color-button-fg: hsl(42, 100%, 25%);
+  --color-button-fg: hsl(42, 100%, 15%);
   --color-error: light-dark(hsl(2, 59%, 44%), hsl(5, 100%, 67%));
   --color-gradient: light-dark(hsl(42, 100%, 95%), hsl(265, 27%, 18%));
   --color-button: light-dark(hsl(42, 100%, 70%), hsl(42, 100%, 70%));

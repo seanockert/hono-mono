@@ -7,7 +7,7 @@ const { Database } = require('bun:sqlite');
 
 export const auth = betterAuth({
   ...authConfig,
-  database: new Database('src/auth.db'),
+  database: new Database('src/honomono.db'),
   baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:3000',
   secret: process.env.BETTER_AUTH_SECRET ?? 'dev-secret',
 });

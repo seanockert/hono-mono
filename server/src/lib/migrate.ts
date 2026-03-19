@@ -2,7 +2,7 @@ import { Database } from 'bun:sqlite';
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-const db = new Database('src/auth.db');
+const db = new Database('src/honomono.db');
 
 db.run(`CREATE TABLE IF NOT EXISTS "_migrations" (
   "name"      TEXT NOT NULL PRIMARY KEY,
@@ -22,7 +22,7 @@ for (const file of files) {
   }
 
   const sql = readFileSync(join(migrationsDir, file), 'utf-8');
-  db.run(sql);
+  db.exec(sql);
   db.run('INSERT INTO "_migrations" (name, appliedAt) VALUES (?, ?)', [
     file,
     new Date().toISOString(),

@@ -27,7 +27,7 @@ export const createDb = (env: AppEnv): Kysely<AppDatabase> => {
   }
 
   const { Database } = require('bun:sqlite');
-  const sqlite = new Database('src/auth.db');
+  const sqlite = new Database('src/honomono.db');
 
   // Bun's Statement lacks the `reader` boolean Kysely's SqliteDialect needs to
   // distinguish SELECT from write statements. Patch it onto every prepared statement.
