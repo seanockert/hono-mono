@@ -24,7 +24,7 @@
       </button>
 
       <div class="inline-quarter">
-        or <a href="/signup" @click.prevent="navigate('signup')">sign up</a>
+        or <RouterLink :to="(resolve) => resolve('signup')">sign up</RouterLink>
       </div>
       <!-- <button @click="handleGithubLogin">Login with GitHub</button> -->
     </form>
@@ -35,14 +35,13 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
+import { RouterLink } from '@kitbag/router';
 import { authClient } from '../lib/auth-client';
-import { useRouter } from '../lib/simple-router';
 import { getErrorMessage } from '../lib/auth-errors';
 import AuthTest from '../components/AuthTest.vue';
 
 const sessionData = authClient.useSession();
 const isPending = computed(() => sessionData.value.isPending);
-const { navigate } = useRouter();
 
 const email = ref('');
 const password = ref('');

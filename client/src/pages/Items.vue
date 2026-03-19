@@ -2,7 +2,7 @@
   <div class="stack">
     <header class="inline-between">
       <h1>Items</h1>
-      <a href="/dashboard" @click.prevent="navigate('dashboard')">Dashboard</a>
+      <RouterLink :to="(resolve) => resolve('dashboard')">Dashboard</RouterLink>
     </header>
 
     <form v-if="session" @submit.prevent="handleCreate" class="inline-quarter">
@@ -29,9 +29,9 @@
       <tbody>
         <tr v-for="item in items" :key="item.id">
           <td>
-            <a :href="`/item/${item.slug}`" @click.prevent="navigate('item', false, { slug: item.slug })">
+            <RouterLink :to="(resolve) => resolve('item', { slug: item.slug })">
               {{ item.title }}
-            </a>
+            </RouterLink>
           </td>
           <td>{{ item.slug }}</td>
           <td>{{ item.status }}</td>
@@ -53,13 +53,12 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { RouterLink } from '@kitbag/router';
 import { authClient } from '../lib/auth-client';
-import { useRouter } from '../lib/simple-router';
 import { useItems } from '../composables/useItems';
 
 const sessionData = authClient.useSession();
 const session = computed(() => sessionData.value.data);
-const { navigate } = useRouter();
 const { items, isLoading, error, createItem, deleteItem } = useItems();
 
 const newTitle = ref('');

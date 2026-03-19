@@ -2,7 +2,7 @@
   <div class="stack">
     <header class="inline-between">
       <h1>{{ item?.title ?? 'Untitled item' }}</h1>
-      <a href="/items" @click.prevent="navigate('items')">Items</a>
+      <RouterLink :to="(resolve) => resolve('items')">Items</RouterLink>
     </header>
 
     <div v-if="isLoading">Loading...</div>
@@ -20,11 +20,11 @@
 </template>
 
 <script setup lang="ts">
-import { useRouter } from '../lib/simple-router';
+import { RouterLink, useRoute } from '@kitbag/router';
 import { useItem } from '../composables/useItems';
 
-const { params, navigate } = useRouter();
-const { item, isLoading, error } = useItem(() => params.value.slug ?? '');
+const route = useRoute('item');
+const { item, isLoading, error } = useItem(() => route.params.slug);
 </script>
 
 <style scoped>
