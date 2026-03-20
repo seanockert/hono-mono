@@ -13,6 +13,12 @@ bun run dev
 
 `bun run setup` creates `server/.env`, `client/.env.local`, and `server/src/honomono.db` — run once after cloning.
 
+Optionally rename the default "item" model during setup:
+
+```bash
+bun run setup post    # Renames all "item" files and references to "post"
+```
+
 ## Architecture
 
 - **Frontend**: Vue 3 + Vite, deployed to Cloudflare Pages
@@ -56,11 +62,19 @@ bun run build
 
 ## Deployment
 
+First-time setup (creates D1 database, generates `wrangler.toml`, sets secrets, runs remote migrations):
+
+```bash
+bun run deploy:setup my-app
+```
+
+Then deploy:
+
 ```bash
 bun run deploy
 ```
 
-This will deploy 
+This will deploy:
 1. the Frontend (client) to Cloudflare Pages
 2. the Backend (server) to Cloudflare Workers
 
@@ -69,8 +83,9 @@ This will deploy
 Scaffold a new CRUD model (routes, migration, shared types, Vue composable):
 
 ```bash
-bun run generate <modelName>
+bun run generate <modelName> [pluralName]
 # e.g. bun run generate product
+# e.g. bun run generate category categories
 ```
 
 This generates all files and automatically:
@@ -78,7 +93,9 @@ This generates all files and automatically:
 1. Adds `<Model>Table` to `AppDatabase` in `server/src/lib/db.ts`
 2. Mounts the route in `server/src/index.ts`
 3. Re-exports the type from `shared/src/types/index.ts`
-4. Runs the migration
+4. Creates list and detail Vue pages in `client/src/pages/`
+5. Adds routes to `client/src/router.ts`
+6. Runs the migration
 
 The generated route includes paginated list, get by id/slug, create, update, and delete — identical in structure to the built-in `items` model.
 

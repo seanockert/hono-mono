@@ -1,15 +1,19 @@
-name = "hono-mono-app"
-main = "dist/index.js"
+name = "your-app-name"
+main = "src/index.ts"
 compatibility_date = "2025-02-13"
 compatibility_flags = ["nodejs_compat"]
 
+[alias]
+"bun:sqlite" = "./node_modules/bun-types/sqlite.d.ts"
+
 [vars]
-# Public URLs - Update with your actual deployment URLs
+# Public URLs — update with your actual deployment URLs
 BETTER_AUTH_URL = "https://your-app-name.workers.dev"
-CLIENT_URL = "https://your-client-name.pages.dev"
+CLIENT_URLS = "https://your-app-name-client.pages.dev"
 # BETTER_AUTH_SECRET is configured as a Wrangler secret
 
 [[d1_databases]]
 binding = "DATABASE"
-database_name = "hono-mono"
+database_name = "your-app-name-db"
 database_id = "xxx"
+migrations_dir = "migrations"
