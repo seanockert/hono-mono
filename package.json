@@ -22,6 +22,7 @@
     "dev": "bun run scripts/dev.ts",
     "setup": "bun run scripts/setup.ts",
     "generate": "bun run scripts/generate-model.ts",
+    "deploy:setup": "bun run scripts/deploy-setup.ts",
     "build": "cd shared && bun run build && cd ../client && bun run build",
     "deploy": "cd server && bun run deploy && cd ../client && bun run deploy",
     "postinstall": "cd shared && bun run build",

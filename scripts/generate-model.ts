@@ -3,28 +3,28 @@
  * Model scaffolder — generates CRUD boilerplate for a new model.
  *
  * Usage:
- *   bun run generate <modelName>
+ *   bun run generate <modelName> [pluralName]
  *
  * Example:
  *   bun run generate post
- *   bun run generate product
+ *   bun run generate category categories
  */
 
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
-
 const modelArg = process.argv[2];
 
 if (!modelArg) {
-  console.error('Usage: bun run scripts/generate-model.ts <modelName>');
-  console.error('Example: bun run scripts/generate-model.ts post');
+  console.error('Usage: bun run scripts/generate-model.ts <modelName> [pluralName]');
+  console.error('Example: bun run scripts/generate-model.ts category categories');
   process.exit(1);
 }
 
 const model = modelArg.toLowerCase();
 const Model = model.charAt(0).toUpperCase() + model.slice(1);
-const models = `${model}s`;
-const Models = `${Model}s`;
+const pluralArg = process.argv[3];
+const models = pluralArg ? pluralArg.toLowerCase() : `${model}s`;
+const Models = models.charAt(0).toUpperCase() + models.slice(1);
 const root = join(import.meta.dir, '..');
 const timestamp = new Date().toISOString().replace(/\.\d{3}Z$/, '').replace(/[T:]/g, '-');
 
@@ -244,7 +244,7 @@ export type ${Model}ListParams = {
 // ─── 4. Vue Composable ───────────────────────────────────────────────────────
 
 const composablePath = join(root, `client/src/composables/use${Models}.ts`);
-const composableContent = `import { ref, onMounted, watch } from 'vue';
+const composableContent = `import { ref, onMounted, watch, toValue, type MaybeRefOrGetter } from 'vue';
 import type { ${Model}, ${Model}ListParams } from 'shared';
 import { SERVER_URL, authHeaders } from '../lib/config';
 
@@ -331,6 +331,174 @@ export const use${Models} = () => {
 
   return { ${models}, total, isLoading, error, params, fetch${Models}, create${Model}, update${Model}, delete${Model} };
 };
+
+export const use${Model} = (slugRef: MaybeRefOrGetter<string>) => {
+  const ${model} = ref<${Model} | null>(null);
+  const isLoading = ref(false);
+  const error = ref<string>('');
+
+  const fetch${Model} = async () => {
+    const slug = toValue(slugRef);
+    if (!slug) return;
+    isLoading.value = true;
+    error.value = '';
+    try {
+      const res = await fetch(\`\${SERVER_URL}/api/${models}/\${slug}\`, {
+        credentials: 'include',
+      });
+      if (res.status === 404) {
+        error.value = '${Model} not found';
+        return;
+      }
+      if (!res.ok) throw new Error(\`Request failed: \${res.status}\`);
+      ${model}.value = (await res.json()) as ${Model};
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to fetch ${model}';
+    } finally {
+      isLoading.value = false;
+    }
+  };
+
+  watch(() => toValue(slugRef), fetch${Model}, { immediate: true });
+
+  return { ${model}, isLoading, error };
+};
+`;
+
+// ─── 5. Vue List Page ────────────────────────────────────────────────────────
+
+const listPagePath = join(root, `client/src/pages/${Models}.vue`);
+const listPageContent = `<template>
+  <div class="stack">
+    <header class="inline-between">
+      <h1>${Models}</h1>
+      <RouterLink :to="(resolve) => resolve('dashboard')">Dashboard</RouterLink>
+    </header>
+
+    <form v-if="session" @submit.prevent="handleCreate" class="inline-quarter">
+      <input v-model="newTitle" placeholder="New ${model} title" autofocus required />
+      <button type="submit" :disabled="isCreating">
+        {{ isCreating ? 'Adding...' : 'Add' }}
+      </button>
+    </form>
+
+    <div v-if="isLoading">Loading...</div>
+    <div v-else-if="error" class="error-message">{{ error }}</div>
+    <div v-else-if="!${models}.length">No ${models} yet.</div>
+
+    <table v-else>
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Slug</th>
+          <th>Status</th>
+          <th>Created</th>
+          <th v-if="session">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="${model} in ${models}" :key="${model}.id">
+          <td>
+            <RouterLink :to="(resolve) => resolve('${model}', { slug: ${model}.slug })">
+              {{ ${model}.title }}
+            </RouterLink>
+          </td>
+          <td>{{ ${model}.slug }}</td>
+          <td>{{ ${model}.status }}</td>
+          <td>{{ new Date(${model}.createdAt).toLocaleDateString() }}</td>
+          <td v-if="session">
+            <button
+              @click="handleDelete(${model}.id)"
+              :disabled="deletingId === ${model}.id"
+              class="button-secondary button-small"
+            >
+              {{ deletingId === ${model}.id ? 'Deleting...' : 'Delete' }}
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue';
+import { RouterLink } from '@kitbag/router';
+import { authClient } from '../lib/auth-client';
+import { use${Models} } from '../composables/use${Models}';
+
+const sessionData = authClient.useSession();
+const session = computed(() => sessionData.value.data);
+const { ${models}, isLoading, error, create${Model}, delete${Model} } = use${Models}();
+
+const newTitle = ref('');
+const isCreating = ref(false);
+const deletingId = ref<string | null>(null);
+
+const handleCreate = async () => {
+  isCreating.value = true;
+  try {
+    await create${Model}({ title: newTitle.value });
+    newTitle.value = '';
+  } catch (err) {
+    alert(err instanceof Error ? err.message : 'Failed to create ${model}');
+  } finally {
+    isCreating.value = false;
+  }
+};
+
+const handleDelete = async (id: string) => {
+  if (!confirm('Delete this ${model}?')) return;
+  deletingId.value = id;
+  try {
+    await delete${Model}(id);
+  } catch (err) {
+    alert(err instanceof Error ? err.message : 'Failed to delete ${model}');
+  } finally {
+    deletingId.value = null;
+  }
+};
+</script>
+`;
+
+// ─── 6. Vue Detail Page ─────────────────────────────────────────────────────
+
+const detailPagePath = join(root, `client/src/pages/${Model}.vue`);
+const detailPageContent = `<template>
+  <div class="stack">
+    <header class="inline-between">
+      <h1>{{ ${model}?.title ?? 'Untitled ${model}' }}</h1>
+      <RouterLink :to="(resolve) => resolve('${models}')">${Models}</RouterLink>
+    </header>
+
+    <div v-if="isLoading">Loading...</div>
+    <div v-else-if="error" class="error-message">{{ error }}</div>
+    <ul v-else-if="${model}" class="stack-half">
+      <li><div>Slug:</div> {{ ${model}.slug }}</li>
+      <li><div>Status:</div> {{ ${model}.status }}</li>
+      <li><div>Created:</div> {{ new Date(${model}.createdAt).toLocaleString() }}</li>
+      <li><div>Updated:</div> {{ new Date(${model}.updatedAt).toLocaleString() }}</li>
+      <li v-if="${model}.content">
+        <p>{{ ${model}.content }}</p>
+      </li>
+    </ul>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { RouterLink, useRoute } from '@kitbag/router';
+import { use${Model} } from '../composables/use${Models}';
+
+const route = useRoute('${model}');
+const { ${model}, isLoading, error } = use${Model}(() => route.params.slug);
+</script>
+
+<style scoped>
+ul li {
+  display: flex;
+  gap: var(--size-base);
+}
+</style>
 `;
 
 // ─── Write all files ─────────────────────────────────────────────────────────
@@ -340,6 +508,8 @@ writeFile(sqlPath, sqlContent);
 writeFile(routePath, routeContent);
 writeFile(typePath, typeContent);
 writeFile(composablePath, composableContent);
+writeFile(listPagePath, listPageContent);
+writeFile(detailPagePath, detailPageContent);
 
 // ─── Patch A — server/src/lib/db.ts ──────────────────────────────────────────
 
@@ -418,7 +588,34 @@ if (sharedTypes.includes(reExport)) {
   console.log(`  Patched: shared/src/types/index.ts — added ${Model} re-export`);
 }
 
-// ─── Patch D — run migration ──────────────────────────────────────────────────
+// ─── Patch D — client/src/router.ts ──────────────────────────────────────────
+
+const routerPath = join(root, 'client/src/router.ts');
+let routerTs = readFileSync(routerPath, 'utf-8');
+const routerTsOriginal = routerTs;
+
+const pageImportList = `import ${Model} from './pages/${Model}.vue';`;
+const pageImportPlural = `import ${Models} from './pages/${Models}.vue';`;
+
+if (!routerTs.includes(pageImportPlural)) {
+  routerTs = routerTs.replace(
+    /(import \w+ from '\.\/pages\/[^']+';)(?![\s\S]*import \w+ from '\.\/pages\/)/,
+    `$1\n${pageImportPlural}\n${pageImportList}`,
+  );
+  console.log(`  Patched: client/src/router.ts — added page imports`);
+}
+
+const listRoute = `  createRoute({ name: '${models}', path: '/${models}', component: ${Models} }),`;
+const detailRoute = `  createRoute({ name: '${model}', path: '/${model}/[slug]', component: ${Model} }),`;
+
+if (!routerTs.includes(`name: '${models}'`)) {
+  routerTs = routerTs.replace('] as const', `${listRoute}\n${detailRoute}\n] as const`);
+  console.log(`  Patched: client/src/router.ts — added routes`);
+}
+
+if (routerTs !== routerTsOriginal) writeFileSync(routerPath, routerTs, 'utf-8');
+
+// ─── Patch E — run migration ──────────────────────────────────────────────────
 
 console.log('  Running migration...');
 const migration = Bun.spawnSync(['bun', 'run', 'migrate'], {
@@ -440,11 +637,14 @@ console.log(`
     server/src/routes/${models}.ts
     shared/src/types/${model}.ts
     client/src/composables/use${Models}.ts
+    client/src/pages/${Models}.vue
+    client/src/pages/${Model}.vue
 
   Files patched:
     server/src/lib/db.ts       (${Model}Table + AppDatabase)
     server/src/index.ts        (route mount)
     shared/src/types/index.ts  (re-export)
+    client/src/router.ts       (page routes)
 
   The API is live at /api/${models}
 `);
