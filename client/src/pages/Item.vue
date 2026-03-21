@@ -2,7 +2,7 @@
   <div class="stack">
     <header class="inline-between">
       <h1>{{ item?.title ?? 'Untitled item' }}</h1>
-      <RouterLink :to="resolve('items')">Items</RouterLink>
+      <RouterLink :to="{ name: 'items' }">Items</RouterLink>
     </header>
 
     <div v-if="isLoading">Loading...</div>
@@ -20,13 +20,11 @@
 </template>
 
 <script setup lang="ts">
-import { RouterLink, useRoute, useRouter } from '@kitbag/router';
-
-const { resolve } = useRouter();
+import { RouterLink, useRoute } from 'vue-router';
 import { useItem } from '../composables/useItems';
 
-const route = useRoute('item');
-const { item, isLoading, error } = useItem(() => route.params.slug);
+const route = useRoute();
+const { item, isLoading, error } = useItem(() => route.params.slug as string);
 </script>
 
 <style scoped>

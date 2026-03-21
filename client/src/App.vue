@@ -5,7 +5,7 @@
 
 <script setup lang="ts">
 import { computed, watchEffect } from 'vue';
-import { RouterView, useRoute, useRouter } from '@kitbag/router';
+import { RouterView, useRoute, useRouter } from 'vue-router';
 import { authClient } from './lib/auth-client';
 
 const sessionData = authClient.useSession();
@@ -19,12 +19,12 @@ watchEffect(() => {
   if (isPending.value) return;
 
   if (session.value && (route.name === 'login' || route.name === 'signup')) {
-    router.push('dashboard');
+    router.push({ name: 'dashboard' });
     return;
   }
 
   if (!session.value && route.name === 'dashboard') {
-    router.replace('login');
+    router.replace({ name: 'login' });
   }
 });
 </script>
