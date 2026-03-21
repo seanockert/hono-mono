@@ -5,8 +5,9 @@
       <RouterLink :to="{ name: 'dashboard' }">Dashboard</RouterLink>
     </header>
 
-    <form v-if="session" @submit.prevent="handleCreate" class="inline-quarter">
-      <input v-model="newTitle" placeholder="New item title" autofocus required />
+    <form v-if="session" class="inline-zero inline-form" @submit.prevent="handleCreate">
+      <label for="newTitle" hidden>Update title</label>
+      <input v-model="newTitle" id="newTitle" placeholder="New item title" autofocus required />
       <button type="submit" :disabled="isCreating">
         {{ isCreating ? 'Adding...' : 'Add' }}
       </button>

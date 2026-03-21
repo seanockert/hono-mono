@@ -1,14 +1,20 @@
 # Hono Mono
 
-A TypeScript monorepo framework for building a full-stack app with Hono.
+A TypeScript monorepo framework for building a full-stack app with Hono. 
 
-## Yeah but what is it?
+## Yeah, but what is it?
 
-- Frontend SPA + backend API that runs on a free Cloudflare account or on any Bun server
-- Get started quick: run the setup script to configure everything a scaffold a CRUD models
+- Frontend app + backend API that runs on a free Cloudflare account, or on any Bun server
 - Includes authentication and account signup
-- Shared types across backend and frontend
+- Get started quick: run the setup script to configure db, auth, and scaffold a CRUD model
+- Shared Typescript types
 - Lightweight and flexible. Designed to be extended upon. Replace the frontend Vue if you want
+
+## Show me a demo
+
+https://hono-mono.seanockert.com — create an account and log in.
+
+Backend API: https://hono-mono.seanockert.workers.dev
 
 ## Getting Started
 
@@ -19,68 +25,29 @@ bun run setup
 bun run dev
 ```
 
-`bun run setup` creates `server/.env`, `client/.env.local`, and `server/src/honomono.db` — run once after cloning.
-
-Optionally rename the default "item" model during setup:
-
-```bash
-bun run setup post    # Renames all "item" files and references to "post"
-```
+`bun run setup` creates `server/.env`, `client/.env.local`, and `server/src/honomono.db`. Run once after cloning. It will also prompt you to rename the default `item` model (e.g. "post").
 
 ## Architecture
 
-- **Frontend**: Vue 3 + Vite, deployed to Cloudflare Pages
-- **Backend**: Hono API, deployed to Cloudflare Workers
-- **Shared**: Common TypeScript types shared between frontend and backend
-- **Auth**: Better Auth with Cloudflare D1 database
-- **Items model**: Base model for creating CRUD items
-
-## Demo
-
-Create a user account and login: https://hono-mono.seanockert.com
-
-Backend API hosted at https://hono-mono-app.seanockert.workers.dev
-
-<img width="768" alt="dashboard" src="https://github.com/user-attachments/assets/3e99a011-fae0-41f6-80d8-31954c11b2d4" />
-
-<img width="768" alt="items-list" src="https://github.com/user-attachments/assets/8b3ae36f-41f0-46ff-8b26-2dd3e0516436" />
-
-
-## Development
-
-Start all services in development mode:
-
-```bash
-bun run dev
-```
-
-This will start:
-
-- Shared types watcher
-- Backend server at http://localhost:3000
-- Frontend dev server at http://localhost:5173
+| Layer | Tech | Deployment |
+|-------|------|------------|
+| Frontend | Vue 3 + Vite | Cloudflare Pages |
+| Backend | Hono | Cloudflare Workers (D1) or Bun (SQLite) |
+| Shared | TypeScript types | — |
+| Auth | Better Auth | — |
 
 ## Deployment
 
 First-time setup (creates D1 database, generates `wrangler.toml`, sets secrets, runs remote migrations):
 
 ```bash
-bun run deploy:setup my-app
-```
-
-Then deploy:
-
-```bash
+bun run deploy:setup
 bun run deploy
 ```
 
-This will deploy:
-1. the Frontend (client) to Cloudflare Pages
-2. the Backend (server) to Cloudflare Workers
-
 ## Adding a New Model
 
-Scaffold a new CRUD model (routes, migration, shared types, Vue composable):
+You can quickly scaffold a new CRUD model (routes, migration, shared types, Vue composable) with:
 
 ```bash
 bun run generate <modelName> [pluralName]
@@ -88,29 +55,25 @@ bun run generate <modelName> [pluralName]
 # e.g. bun run generate category categories
 ```
 
-This generates all files and automatically:
+Automatically adds the DB table, mounts the route, re-exports types, creates Vue pages and routes, and runs the migration. The generated route includes paginated list, get by id/slug, create, update, and delete.
 
-1. Adds `<Model>Table` to `AppDatabase` in `server/src/lib/db.ts`
-2. Mounts the route in `server/src/index.ts`
-3. Re-exports the type from `shared/src/types/index.ts`
-4. Creates list and detail Vue pages in `client/src/pages/`
-5. Adds routes to `client/src/router.ts`
-6. Runs the migration
+## Environment Variables
 
-The generated route includes paginated list, get by id/slug, create, update, and delete — identical in structure to the built-in `items` model.
+`bun run setup` creates env files for local development. For production, set these in `server/wrangler.toml` or via Wrangler secrets:
 
-## Configuration
+| Variable | Description |
+|----------|-------------|
+| `BETTER_AUTH_SECRET` | Secret key for auth |
+| `BETTER_AUTH_URL` | Your Workers API URL |
+| `CLIENT_URLS` | Your Pages frontend URL (for CORS) |
 
-### Server Environment Variables
+Client production settings are in `client/.env.production` (committed).
 
-`bun run setup` creates `server/.env` from `server/.env.example` with a generated secret. For production, set these in `server/wrangler.toml` or via Wrangler secrets:
+## Auth
 
-- `BETTER_AUTH_SECRET`: Secret key for auth
-- `BETTER_AUTH_URL`: Your Workers API URL
-- `CLIENT_URLS`: Your Pages frontend URL (for CORS)
-- `GITHUB_CLIENT_ID`: GitHub OAuth client ID (optional)
-- `GITHUB_CLIENT_SECRET`: GitHub OAuth secret (optional)
+- We've set an additional field `role` on the auth table (server/src/lib/auth.ts). This defaults to "user" but if you change this to "admin" then that admin user can view and edit all other users from the dashboard.
+- Better Auth's default scrypt exceeds the Workers 10ms time limit on free plan so we switched to PBKDF2 with 100K iterations. This is still secure but on the lower end of OWASP recommendations so review this if shipping a production app. 
+ 
+## Todo
 
-### Client Environment Variables
-
-`bun run setup` creates `client/.env.local` for local development. Production settings are in `client/.env.production` (committed).
+- Add OAuth login eg. Google

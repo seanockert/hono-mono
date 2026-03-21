@@ -2,16 +2,17 @@
 /**
  * One-command setup script — idempotent, safe to re-run.
  *
- * Usage: bun run setup [modelName]
+ * Usage: bun run setup [modelName] [pluralName]
  *
  * Examples:
- *   bun run setup          Prompts for model name (default: "item")
- *   bun run setup post     Renames "item" to "post" everywhere (non-interactive)
+ *   bun run setup                       Prompts for model name (default: "item")
+ *   bun run setup post                  Renames "item" → "post", plural "posts"
+ *   bun run setup category categories   Renames "item" → "category"/"categories"
  */
 
-import { existsSync, readFileSync, writeFileSync, renameSync, unlinkSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
-const root = join(import.meta.dir, '..');
+import { root, resolveModel, runMigrate } from './lib';
 
 console.log('\n  Setting up hono-mono...\n');
 
@@ -43,13 +44,15 @@ if (existsSync(clientEnvPath)) {
 // ─── 3. Rename default model (optional) ──────────────────────────────────────
 
 const rawArg = process.argv[2];
+const rawArgPlural = process.argv[3];
 const modelArg = rawArg ?? (prompt('  Default model name (press Enter to keep "item"): ') ?? '').trim();
 
 if (modelArg && modelArg.toLowerCase() !== 'item') {
-  const model = modelArg.toLowerCase();
-  const Model = model.charAt(0).toUpperCase() + model.slice(1);
-  const models = `${model}s`;
-  const Models = `${Model}s`;
+  const { defaultPlural } = resolveModel(modelArg);
+  const pluralArg =
+    rawArgPlural ??
+    (prompt(`  Plural form (press Enter to use "${defaultPlural}"): `) ?? '').trim();
+  const { model, Model, models, Models } = resolveModel(modelArg, pluralArg || undefined);
 
   // Guard: only rename if the original item files still exist
   const itemRoutePath = join(root, 'server/src/routes/items.ts');
@@ -61,6 +64,8 @@ if (modelArg && modelArg.toLowerCase() !== 'item') {
     /** Replace all item/Item/items/Items variants in file content */
     const replaceContent = (content: string): string => {
       return content
+        .replace(/\buseItems\b/g, `use${Models}`)
+        .replace(/\buseItem\b/g, `use${Model}`)
         .replace(/\bItems\b/g, Models)
         .replace(/\bItem\b/g, Model)
         .replace(/\bitems\b/g, models)
@@ -145,23 +150,17 @@ if (modelArg && modelArg.toLowerCase() !== 'item') {
     transformFile(join(root, 'client/src/router.ts'));
     console.log('    client/src/router.ts');
 
+    // Client dashboard (contains route links to items)
+    transformFile(join(root, 'client/src/pages/Dashboard.vue'));
+    console.log('    client/src/pages/Dashboard.vue');
+
     console.log('');
   }
 }
 
 // ─── 4. Migrations ───────────────────────────────────────────────────────────
 
-console.log('  Running migrations...');
-const result = Bun.spawnSync(['bun', 'run', 'migrate'], {
-  cwd: join(root, 'server'),
-  stdout: 'inherit',
-  stderr: 'inherit',
-});
-
-if (result.exitCode !== 0) {
-  console.error('\n  Migration failed. Check errors above.\n');
-  process.exit(1);
-}
+runMigrate();
 
 // ─── Done ────────────────────────────────────────────────────────────────────
 

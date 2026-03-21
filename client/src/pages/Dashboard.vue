@@ -1,7 +1,10 @@
 <template>
   <div class="stack-2x">
     <header class="inline-between inline-wrap">
-      <h1>Hola, {{ session?.user.name }}</h1>
+      <div class="inline">
+        <Logo size="sm" />
+        <h1>Hola, {{ session?.user.name }}</h1>
+      </div>
       <button @click="handleSignOut">Sign Out</button>
     </header>
 
@@ -10,9 +13,10 @@
       <div v-else class="stack-half">
         <div class="inline">
           <strong>Name:</strong>
-          <form class="inline-quarter" @submit="handleUpdateName">
-            <input v-model="newName" type="text" :placeholder="session.user.name" :disabled="isUpdating" />
-            <button type="submit">&rarr;</button>
+          <form class="inline-zero inline-form" @submit.prevent="handleUpdateName">
+            <label for="newName" hidden>Update name</label>
+            <input v-model="newName" id="newName" type="text" :placeholder="session.user.name" :disabled="isUpdating" />
+            <button type="submit">Update</button>
           </form>
 
           <div v-if="updateMessage">{{ updateMessage }}</div>
@@ -39,6 +43,7 @@ import { authClient, clearStoredToken } from '../lib/auth-client';
 import { computed, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import AuthTest from '../components/AuthTest.vue';
+import Logo from '../components/Logo.vue';
 import UserList from '../components/UserList.vue';
 
 const sessionData = authClient.useSession();
