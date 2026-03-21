@@ -25,7 +25,7 @@
     </main>
 
     <div>
-      <RouterLink :to="resolve('items')">View Items &rarr;</RouterLink>
+      <RouterLink :to="{ name: 'items' }">View Items &rarr;</RouterLink>
     </div>
 
     <AuthTest />
@@ -37,9 +37,7 @@
 <script setup lang="ts">
 import { authClient, clearStoredToken } from '../lib/auth-client';
 import { computed, ref } from 'vue';
-import { RouterLink, useRouter } from '@kitbag/router';
-
-const { resolve } = useRouter();
+import { RouterLink } from 'vue-router';
 import AuthTest from '../components/AuthTest.vue';
 import UserList from '../components/UserList.vue';
 

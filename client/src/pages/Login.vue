@@ -26,7 +26,7 @@
       </button>
 
       <div class="inline-quarter">
-        or <RouterLink :to="resolve('signup')">sign up</RouterLink>
+        or <RouterLink :to="{ name: 'signup' }">sign up</RouterLink>
       </div>
       <!-- <button @click="handleGithubLogin">Login with GitHub</button> -->
     </form>
@@ -37,9 +37,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { RouterLink, useRouter } from '@kitbag/router';
-
-const { resolve } = useRouter();
+import { RouterLink } from 'vue-router';
 import { authClient } from '../lib/auth-client';
 import { getErrorMessage } from '../lib/auth-errors';
 import AuthTest from '../components/AuthTest.vue';

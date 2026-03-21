@@ -2,7 +2,7 @@
   <div class="stack">
     <header class="inline-between">
       <h1>Items</h1>
-      <RouterLink :to="resolve('dashboard')">Dashboard</RouterLink>
+      <RouterLink :to="{ name: 'dashboard' }">Dashboard</RouterLink>
     </header>
 
     <form v-if="session" @submit.prevent="handleCreate" class="inline-quarter">
@@ -29,7 +29,7 @@
       <tbody>
         <tr v-for="item in items" :key="item.id">
           <td>
-            <RouterLink :to="resolve('item', { slug: item.slug })">
+            <RouterLink :to="{ name: 'item', params: { slug: item.slug } }">
               {{ item.title }}
             </RouterLink>
           </td>
@@ -53,9 +53,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { RouterLink, useRouter } from '@kitbag/router';
-
-const { resolve } = useRouter();
+import { RouterLink } from 'vue-router';
 import { authClient } from '../lib/auth-client';
 import { useItems } from '../composables/useItems';
 
