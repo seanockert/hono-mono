@@ -5,8 +5,8 @@
  * Usage: bun run setup [modelName]
  *
  * Examples:
- *   bun run setup          Uses default "item" model
- *   bun run setup post     Renames "item" to "post" everywhere
+ *   bun run setup          Prompts for model name (default: "item")
+ *   bun run setup post     Renames "item" to "post" everywhere (non-interactive)
  */
 
 import { existsSync, readFileSync, writeFileSync, renameSync, unlinkSync } from 'node:fs';
@@ -42,7 +42,8 @@ if (existsSync(clientEnvPath)) {
 
 // ─── 3. Rename default model (optional) ──────────────────────────────────────
 
-const modelArg = process.argv[2];
+const rawArg = process.argv[2];
+const modelArg = rawArg ?? (prompt('  Default model name (press Enter to keep "item"): ') ?? '').trim();
 
 if (modelArg && modelArg.toLowerCase() !== 'item') {
   const model = modelArg.toLowerCase();

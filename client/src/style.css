@@ -163,11 +163,19 @@ input {
   :root {
     color-scheme: dark;
   }
+
+  .logo-monogram {
+    fill: hsl(0, 0%, 90%)
+  }
 }
 
 .dark {
   color-scheme: dark;
 }
+
+.dark .logo-monogram {
+    fill: hsl(0, 0%, 90%)
+  }
 
 /* Inline and Stack layout. Docs: https://seanockert.com/css-layouts */
 [class^='inline'],

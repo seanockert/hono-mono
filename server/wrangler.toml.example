@@ -4,7 +4,7 @@ compatibility_date = "2025-02-13"
 compatibility_flags = ["nodejs_compat"]
 
 [alias]
-"bun:sqlite" = "./node_modules/bun-types/sqlite.d.ts"
+"bun:sqlite" = "./src/lib/bun-sqlite-stub.ts"
 
 [vars]
 # Public URLs — update with your actual deployment URLs
@@ -14,6 +14,6 @@ CLIENT_URLS = "https://your-app-name-client.pages.dev"
 
 [[d1_databases]]
 binding = "DATABASE"
-database_name = "your-app-name-db"
+database_name = "your-app-name"
 database_id = "xxx"
 migrations_dir = "migrations"

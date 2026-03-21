@@ -8,8 +8,8 @@
     "build": "vue-tsc -b && vite build",
     "build:prod": "vue-tsc -b && vite build --mode production",
     "preview": "vite preview",
-    "deploy": "bun run build:prod && wrangler pages deploy dist --project-name=hono-mono-client",
-    "deploy:dev": "bun run build && wrangler pages deploy dist --project-name=hono-mono-client",
+    "deploy": "bun run build:prod && bunx wrangler pages deploy dist --project-name=hono-mono-client",
+    "deploy:dev": "bun run build && bunx wrangler pages deploy dist --project-name=hono-mono-client",
     "lint": "oxlint --ignore-path ../.gitignore .",
     "format": "oxfmt --ignore-path ../.gitignore .",
     "format:check": "oxfmt --ignore-path ../.gitignore --check ."

@@ -3,17 +3,27 @@
  * Cloudflare deployment setup — creates D1 database, generates wrangler.toml,
  * sets secrets, and runs remote migrations.
  *
- * Usage: bun run deploy:setup [appName]
+ * Usage: bun run deploy:setup <appName>
+ * Example: bun run deploy:setup hono-mono
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const root = join(import.meta.dir, '..');
-const appName = process.argv[2] || 'hono-mono-app';
-const dbName = `${appName}-db`;
 
-console.log(`\n  Setting up Cloudflare deployment for "${appName}"...\n`);
+console.log('\n  Cloudflare deployment setup\n');
+
+const appName = process.argv[2] || prompt('  App name (e.g. hono-mono): ')?.trim();
+
+if (!appName) {
+  console.error('  ✗ App name is required\n');
+  process.exit(1);
+}
+
+const dbName = appName;
+
+console.log(`\n  Setting up "${appName}"...\n`);
 
 // ─── 1. Check wrangler auth ─────────────────────────────────────────────────
 
@@ -65,7 +75,7 @@ if (!databaseId) {
   }
 
   const output = createResult.stdout.toString();
-  const match = output.match(/database_id\s*=\s*"([^"]+)"/);
+  const match = output.match(/"database_id":\s*"([^"]+)"/) || output.match(/database_id\s*=\s*"([^"]+)"/);
   if (!match) {
     console.error(`  ✗ Could not parse database_id from wrangler output:\n${output}`);
     process.exit(1);
@@ -75,7 +85,48 @@ if (!databaseId) {
   console.log(`  ✓ D1 database created (${databaseId})`);
 }
 
-// ─── 3. Generate server/wrangler.toml ────────────────────────────────────────
+// ─── 3. Detect workers.dev subdomain ────────────────────────────────────────
+
+let detectedWorkerUrl = '';
+
+const subdomainResult = Bun.spawnSync(['bunx', 'wrangler', 'workers', 'subdomain', 'get'], {
+  stdout: 'pipe',
+  stderr: 'pipe',
+});
+
+if (subdomainResult.exitCode === 0) {
+  const out = subdomainResult.stdout.toString();
+  const match = out.match(/([a-z0-9-]+)\.workers\.dev/) || out.match(/^([a-z0-9-]+)\s*$/m);
+  if (match) detectedWorkerUrl = `https://${appName}.${match[1]}.workers.dev`;
+}
+
+// ─── 4. Prompt for server and client URLs ───────────────────────────────────
+
+console.log('');
+
+const serverPrompt = detectedWorkerUrl
+  ? `  Server URL [${detectedWorkerUrl}]: `
+  : '  Server URL (e.g. https://hono-mono.yourname.workers.dev or https://api.yourapp.com): ';
+
+const serverUrlInput = prompt(serverPrompt)?.trim();
+const workerUrl = serverUrlInput || detectedWorkerUrl;
+
+if (!workerUrl) {
+  console.error('\n  ✗ Server URL is required\n');
+  process.exit(1);
+}
+
+const clientPagesUrl = `https://${appName}-client.pages.dev`;
+const customClientInput = prompt(
+  `  Custom client domain? (e.g. myapp.com, leave blank to use ${clientPagesUrl} only): `,
+)?.trim();
+const clientUrls = customClientInput
+  ? `${clientPagesUrl},https://${customClientInput}`
+  : clientPagesUrl;
+
+console.log('');
+
+// ─── 5. Generate server/wrangler.toml ────────────────────────────────────────
 
 const wranglerExamplePath = join(root, 'server/wrangler.toml.example');
 const wranglerPath = join(root, 'server/wrangler.toml');
@@ -87,19 +138,13 @@ if (existsSync(wranglerPath)) {
   toml = toml.replace(/name = ".*?"/, `name = "${appName}"`);
   toml = toml.replace(/database_id = ".*?"/, `database_id = "${databaseId}"`);
   toml = toml.replace(/database_name = ".*?"/, `database_name = "${dbName}"`);
-  toml = toml.replace(
-    /BETTER_AUTH_URL = ".*?"/,
-    `BETTER_AUTH_URL = "https://${appName}.workers.dev"`,
-  );
-  toml = toml.replace(
-    /CLIENT_URLS = ".*?"/,
-    `CLIENT_URLS = "https://${appName}-client.pages.dev"`,
-  );
+  toml = toml.replace(/BETTER_AUTH_URL = ".*?"/, `BETTER_AUTH_URL = "${workerUrl}"`);
+  toml = toml.replace(/CLIENT_URLS = ".*?"/, `CLIENT_URLS = "${clientUrls}"`);
   writeFileSync(wranglerPath, toml, 'utf-8');
   console.log('  ✓ server/wrangler.toml generated');
 }
 
-// ─── 4. Set BETTER_AUTH_SECRET ───────────────────────────────────────────────
+// ─── 6. Set BETTER_AUTH_SECRET ──────────────────────────────────────────────
 
 const serverEnvPath = join(root, 'server/.env');
 let secret = '';
@@ -133,7 +178,7 @@ if (secret) {
   console.warn('    echo "your-secret" | bunx wrangler secret put BETTER_AUTH_SECRET');
 }
 
-// ─── 5. Run remote migrations ───────────────────────────────────────────────
+// ─── 7. Run remote migrations ───────────────────────────────────────────────
 
 console.log('  Running remote migrations...');
 const migrateResult = Bun.spawnSync(
@@ -150,13 +195,13 @@ if (migrateResult.exitCode !== 0) {
   console.warn(`    cd server && bunx wrangler d1 migrations apply ${dbName} --remote`);
 }
 
-// ─── 6. Generate client/.env.production ──────────────────────────────────────
+// ─── 8. Generate client/.env.production ─────────────────────────────────────
 
 const clientEnvProdPath = join(root, 'client/.env.production');
 if (existsSync(clientEnvProdPath)) {
   console.log('  ✓ client/.env.production already exists — skipping');
 } else {
-  writeFileSync(clientEnvProdPath, `VITE_SERVER_URL=https://${appName}.workers.dev\n`, 'utf-8');
+  writeFileSync(clientEnvProdPath, `VITE_SERVER_URL=${workerUrl}\n`, 'utf-8');
   console.log('  ✓ client/.env.production generated');
 }
 
