@@ -43,13 +43,15 @@
     </form>
 
     <!-- <button type="button" @click="handleGithubSignup">Sign up with GitHub</button> -->
-    <RouterLink :to="(resolve) => resolve('login')">&larr; Back to Login</RouterLink>
+    <RouterLink :to="resolve('login')">&larr; Back to Login</RouterLink>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, watch } from 'vue';
-import { RouterLink } from '@kitbag/router';
+import { RouterLink, useRouter } from '@kitbag/router';
+
+const { resolve } = useRouter();
 import { authClient } from '../lib/auth-client';
 import { getErrorMessage } from '../lib/auth-errors';
 

@@ -1,6 +1,14 @@
 # Hono Mono
 
-A full-stack TypeScript monorepo starter with shared types, using Bun, Hono, Vue, and Vite.
+A TypeScript monorepo framework for building a full-stack app with Hono.
+
+## Yeah but what is it?
+
+- Frontend SPA + backend API that runs on a free Cloudflare account or on any Bun server
+- Get started quick: run the setup script to configure everything a scaffold a CRUD models
+- Includes authentication and account signup
+- Shared types across backend and frontend
+- Lightweight and flexible. Designed to be extended upon. Replace the frontend Vue if you want
 
 ## Getting Started
 
@@ -51,14 +59,6 @@ This will start:
 - Shared types watcher
 - Backend server at http://localhost:3000
 - Frontend dev server at http://localhost:5173
-
-## Building
-
-Build everything:
-
-```bash
-bun run build
-```
 
 ## Deployment
 
