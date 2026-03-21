@@ -11,6 +11,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { authHeaders } from '../lib/config';
 
 // API testing state
 const isTesting = ref(false);
@@ -21,14 +22,14 @@ const testAuthenticatedEndpoint = async () => {
   apiTestResult.value = '';
 
   try {
-    // Make request to protected endpoint with cookies (session-based auth)
     const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3000';
     const response = await fetch(`${serverUrl}/api/protected`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders(),
       },
-      credentials: 'include', // Include cookies for authentication
+      credentials: 'include',
     });
 
     const result = await response.json();

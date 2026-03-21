@@ -4,36 +4,12 @@ import { Kysely } from 'kysely';
 import { D1Dialect } from 'kysely-d1';
 import type { AppEnv } from '../index';
 
-// PBKDF2 via Web Crypto API — works in Cloudflare Workers and Bun.
-// bcrypt/scrypt exceed Workers' CPU time limit causing 503 on sign-up.
-async function hashPassword(password: string): Promise<string> {
-  const encoder = new TextEncoder();
-  const salt = crypto.getRandomValues(new Uint8Array(16));
-  const key = await crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, [
-    'deriveBits',
-  ]);
-  const bits = await crypto.subtle.deriveBits(
-    { name: 'PBKDF2', salt, iterations: 100000, hash: 'SHA-256' },
-    key,
-    256,
-  );
-  const saltB64 = btoa(String.fromCharCode(...salt));
-  const hashB64 = btoa(String.fromCharCode(...new Uint8Array(bits)));
-  return `pbkdf2:sha256:100000:${saltB64}:${hashB64}`;
-}
+// better-auth's default (scrypt) exceeds Workers' CPU time limit causing 503 on sign-up.
+// PBKDF2 via Web Crypto API works in both Cloudflare Workers and Bun.
+const toB64 = (buf: Uint8Array) => btoa(String.fromCharCode(...buf));
+const fromB64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 
-async function verifyPassword({
-  hash,
-  password,
-}: {
-  hash: string;
-  password: string;
-}): Promise<boolean> {
-  const parts = hash.split(':');
-  if (parts.length !== 5 || parts[0] !== 'pbkdf2') return false;
-  const [, , iterStr, saltB64, hashB64] = parts;
-  const salt = Uint8Array.from(atob(saltB64), (c) => c.charCodeAt(0));
-  const expected = Uint8Array.from(atob(hashB64), (c) => c.charCodeAt(0));
+async function pbkdf2Key(password: string, salt: Uint8Array, iterations: number) {
   const key = await crypto.subtle.importKey(
     'raw',
     new TextEncoder().encode(password),
@@ -42,11 +18,25 @@ async function verifyPassword({
     ['deriveBits'],
   );
   const bits = await crypto.subtle.deriveBits(
-    { name: 'PBKDF2', salt, iterations: parseInt(iterStr), hash: 'SHA-256' },
+    { name: 'PBKDF2', salt, iterations, hash: 'SHA-256' },
     key,
     256,
   );
-  const derived = new Uint8Array(bits);
+  return new Uint8Array(bits);
+}
+
+async function hashPassword(password: string): Promise<string> {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const hash = await pbkdf2Key(password, salt, 100000);
+  return `pbkdf2:sha256:100000:${toB64(salt)}:${toB64(hash)}`;
+}
+
+async function verifyPassword({ hash, password }: { hash: string; password: string }): Promise<boolean> {
+  const parts = hash.split(':');
+  if (parts.length !== 5 || parts[0] !== 'pbkdf2') return false;
+  const [, , iterStr, saltB64, hashB64] = parts;
+  const expected = fromB64(hashB64);
+  const derived = await pbkdf2Key(password, fromB64(saltB64), parseInt(iterStr));
   if (derived.length !== expected.length) return false;
   let diff = 0;
   for (let i = 0; i < derived.length; i++) diff |= derived[i] ^ expected[i];

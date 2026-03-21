@@ -12,20 +12,17 @@
 
 import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
+import { root, resolveModel, runMigrate } from './lib';
+
 const modelArg = process.argv[2];
 
 if (!modelArg) {
-  console.error('Usage: bun run scripts/generate-model.ts <modelName> [pluralName]');
-  console.error('Example: bun run scripts/generate-model.ts category categories');
+  console.error('Usage: bun run generate <modelName> [pluralName]');
+  console.error('Example: bun run generate category categories');
   process.exit(1);
 }
 
-const model = modelArg.toLowerCase();
-const Model = model.charAt(0).toUpperCase() + model.slice(1);
-const pluralArg = process.argv[3];
-const models = pluralArg ? pluralArg.toLowerCase() : `${model}s`;
-const Models = models.charAt(0).toUpperCase() + models.slice(1);
-const root = join(import.meta.dir, '..');
+const { model, Model, models, Models } = resolveModel(modelArg, process.argv[3]);
 const timestamp = new Date().toISOString().replace(/\.\d{3}Z$/, '').replace(/[T:]/g, '-');
 
 const writeFile = (path: string, content: string) => {
@@ -372,11 +369,12 @@ const listPageContent = `<template>
   <div class="stack">
     <header class="inline-between">
       <h1>${Models}</h1>
-      <RouterLink :to="(resolve) => resolve('dashboard')">Dashboard</RouterLink>
+      <RouterLink :to="{ name: 'dashboard' }">Dashboard</RouterLink>
     </header>
 
-    <form v-if="session" @submit.prevent="handleCreate" class="inline-quarter">
-      <input v-model="newTitle" placeholder="New ${model} title" autofocus required />
+    <form v-if="session" class="inline-zero inline-form" @submit.prevent="handleCreate">
+      <label for="newTitle" hidden>New ${model} title</label>
+      <input v-model="newTitle" id="newTitle" placeholder="New ${model} title" autofocus required />
       <button type="submit" :disabled="isCreating">
         {{ isCreating ? 'Adding...' : 'Add' }}
       </button>
@@ -399,7 +397,7 @@ const listPageContent = `<template>
       <tbody>
         <tr v-for="${model} in ${models}" :key="${model}.id">
           <td>
-            <RouterLink :to="(resolve) => resolve('${model}', { slug: ${model}.slug })">
+            <RouterLink :to="{ name: '${model}', params: { slug: ${model}.slug } }">
               {{ ${model}.title }}
             </RouterLink>
           </td>
@@ -423,7 +421,7 @@ const listPageContent = `<template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { RouterLink } from '@kitbag/router';
+import { RouterLink } from 'vue-router';
 import { authClient } from '../lib/auth-client';
 import { use${Models} } from '../composables/use${Models}';
 
@@ -461,14 +459,14 @@ const handleDelete = async (id: string) => {
 </script>
 `;
 
-// ─── 6. Vue Detail Page ─────────────────────────────────────────────────────
+// ─── 6. Vue Detail Page ──────────────────────────────────────────────────────
 
 const detailPagePath = join(root, `client/src/pages/${Model}.vue`);
 const detailPageContent = `<template>
   <div class="stack">
     <header class="inline-between">
       <h1>{{ ${model}?.title ?? 'Untitled ${model}' }}</h1>
-      <RouterLink :to="(resolve) => resolve('${models}')">${Models}</RouterLink>
+      <RouterLink :to="{ name: '${models}' }">${Models}</RouterLink>
     </header>
 
     <div v-if="isLoading">Loading...</div>
@@ -486,11 +484,11 @@ const detailPageContent = `<template>
 </template>
 
 <script setup lang="ts">
-import { RouterLink, useRoute } from '@kitbag/router';
+import { RouterLink, useRoute } from 'vue-router';
 import { use${Model} } from '../composables/use${Models}';
 
-const route = useRoute('${model}');
-const { ${model}, isLoading, error } = use${Model}(() => route.params.slug);
+const route = useRoute();
+const { ${model}, isLoading, error } = use${Model}(() => route.params.slug as string);
 </script>
 
 <style scoped>
@@ -501,7 +499,7 @@ ul li {
 </style>
 `;
 
-// ─── Write all files ─────────────────────────────────────────────────────────
+// ─── Write all files ──────────────────────────────────────────────────────────
 
 console.log(`\nScaffolding model: ${Model}\n`);
 writeFile(sqlPath, sqlContent);
@@ -594,22 +592,25 @@ const routerPath = join(root, 'client/src/router.ts');
 let routerTs = readFileSync(routerPath, 'utf-8');
 const routerTsOriginal = routerTs;
 
-const pageImportList = `import ${Model} from './pages/${Model}.vue';`;
 const pageImportPlural = `import ${Models} from './pages/${Models}.vue';`;
+const pageImportSingle = `import ${Model} from './pages/${Model}.vue';`;
 
 if (!routerTs.includes(pageImportPlural)) {
   routerTs = routerTs.replace(
     /(import \w+ from '\.\/pages\/[^']+';)(?![\s\S]*import \w+ from '\.\/pages\/)/,
-    `$1\n${pageImportPlural}\n${pageImportList}`,
+    `$1\n${pageImportPlural}\n${pageImportSingle}`,
   );
   console.log(`  Patched: client/src/router.ts — added page imports`);
 }
 
-const listRoute = `  createRoute({ name: '${models}', path: '/${models}', component: ${Models} }),`;
-const detailRoute = `  createRoute({ name: '${model}', path: '/${model}/[slug]', component: ${Model} }),`;
+const listRoute = `  { name: '${models}', path: '/${models}', component: ${Models} },`;
+const detailRoute = `  { name: '${model}', path: '/${model}/:slug', component: ${Model} },`;
 
 if (!routerTs.includes(`name: '${models}'`)) {
-  routerTs = routerTs.replace('] as const', `${listRoute}\n${detailRoute}\n] as const`);
+  routerTs = routerTs.replace(
+    `  { name: 'not-found'`,
+    `${listRoute}\n${detailRoute}\n  { name: 'not-found'`,
+  );
   console.log(`  Patched: client/src/router.ts — added routes`);
 }
 
@@ -617,17 +618,7 @@ if (routerTs !== routerTsOriginal) writeFileSync(routerPath, routerTs, 'utf-8');
 
 // ─── Patch E — run migration ──────────────────────────────────────────────────
 
-console.log('  Running migration...');
-const migration = Bun.spawnSync(['bun', 'run', 'migrate'], {
-  cwd: join(root, 'server'),
-  stdout: 'inherit',
-  stderr: 'inherit',
-});
-
-if (migration.exitCode !== 0) {
-  console.error('\n  Migration failed. Check errors above.\n');
-  process.exit(1);
-}
+runMigrate();
 
 console.log(`
   Done! ${Model} model is ready.

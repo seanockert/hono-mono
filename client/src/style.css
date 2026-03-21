@@ -1,11 +1,11 @@
 :root {
   --color-bg: light-dark(hsl(0, 0%, 100%), hsl(265, 23%, 10%));
-  --color-bg-secondary: light-dark(hsl(0, 0%, 94%), hsl(268, 19%, 15%));
+  --color-bg-secondary: light-dark(hsl(0, 0%, 94%), hsl(268, 19%, 20%));
   --color-button-fg: hsl(42, 100%, 15%);
   --color-error: light-dark(hsl(2, 59%, 44%), hsl(5, 100%, 67%));
   --color-gradient: light-dark(hsl(42, 100%, 95%), hsl(265, 27%, 18%));
   --color-button: light-dark(hsl(42, 100%, 70%), hsl(42, 100%, 70%));
-  --color-button-secondary: light-dark(hsl(42, 100%, 80%), hsl(42, 100%, 80%));
+  --color-button-secondary: light-dark(hsl(42, 100%, 60%), hsl(42, 100%, 40%));
   --color-link: light-dark(hsl(221, 71%, 32%), hsl(221, 75%, 68%));
   --color-link-hover: light-dark(hsl(221, 71%, 32%), hsl(221, 75%, 68%));
   --color-text: light-dark(hsl(0, 0%, 20%), hsl(0, 0%, 90%));
@@ -15,6 +15,7 @@
   --size-half: 0.375rem;
   --size-quarter: 0.1875rem;
   --size-2x: 1.5rem;
+  --size-3x: 2.5rem;
   --size-4x: 3rem;
   --font-size-small: 0.875rem;
 
@@ -43,11 +44,11 @@
 }
 
 html {
-  background: var(--color-bg) linear-gradient(in oklab, var(--color-gradient), transparent 3rem);
   -webkit-font-smoothing: antialiased;
   -webkit-text-size-adjust: none;
+  background: var(--color-bg) linear-gradient(in oklab, var(--color-gradient), transparent 3rem);
   color: var(--color-text);
-  font-size: clamp(1rem, 2vw, 1.3rem);
+  font-size: clamp(1rem, 2vw + 0.2rem, 1.35rem);
   line-height: 1.5;
   padding: 0.75rem;
   text-size-adjust: none;
@@ -94,6 +95,7 @@ a:focus {
   color: var(--color-link-hover);
 }
 
+/* Form */
 input,
 textarea,
 button,
@@ -109,6 +111,24 @@ select {
   padding: var(--size-half);
 }
 
+input {
+  border: 1px solid var(--color-text-secondary);
+  height: var(--size-3x);
+}
+
+.inline-form > input:first-of-type {
+  border-radius: var(--size-base) 0 0 var(--size-base);
+}
+
+.inline-form > :last-child {
+  border-radius: 0 var(--size-base) var(--size-base) 0;
+}
+
+.error-message {
+  color: var(--color-error);
+}
+
+/* Button */
 button {
   background: linear-gradient(
     to right in oklab,
@@ -121,6 +141,7 @@ button {
   color: var(--color-button-fg);
   cursor: pointer;
   font-weight: bold;
+  height: var(--size-3x);
   transition:
     background-position 0.15s ease-in-out,
     transform 0.15s ease-in-out;
@@ -150,32 +171,6 @@ button:active {
   cursor: not-allowed;
   opacity: 0.8;
 }
-
-input {
-  border: 1px solid var(--color-text-secondary);
-}
-
-.error-message {
-  color: var(--color-error);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-  }
-
-  .logo-monogram {
-    fill: hsl(0, 0%, 90%)
-  }
-}
-
-.dark {
-  color-scheme: dark;
-}
-
-.dark .logo-monogram {
-    fill: hsl(0, 0%, 90%)
-  }
 
 /* Inline and Stack layout. Docs: https://seanockert.com/css-layouts */
 [class^='inline'],
@@ -261,6 +256,16 @@ th {
 
 tbody tr:hover {
   background-color: var(--color-bg-secondary);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+  }
+}
+
+.dark {
+  color-scheme: dark;
 }
 
 @media (prefers-reduced-motion: no-preference) {
