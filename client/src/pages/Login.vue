@@ -1,5 +1,5 @@
 <template>
-  <div class="stack">
+  <section class="stack">
     <header class="inline-between">
       <h1><Logo /></h1>
     </header>
@@ -32,7 +32,7 @@
     </form>
 
     <AuthTest />
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">
@@ -88,3 +88,10 @@ const handleAuthError = (error: any) => {
 //   await authClient.signIn.social({ provider: "github" })
 // }
 </script>
+
+<style scoped>
+section {
+  max-width: var(--size-max-width-sm);
+  margin: auto;
+}
+</style>

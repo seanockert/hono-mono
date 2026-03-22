@@ -6,7 +6,7 @@ import type { AppEnv } from '../index';
 
 // better-auth's default (scrypt) exceeds Workers' CPU time limit causing 503 on sign-up.
 // PBKDF2 via Web Crypto API works in both Cloudflare Workers and Bun.
-const toB64 = (buf: Uint8Array) => btoa(String.fromCharCode(...buf));
+const toB64 = (buf: Uint8Array) => btoa(Array.from(buf, (c) => String.fromCharCode(c)).join(''));
 const fromB64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 
 async function pbkdf2Key(password: string, salt: Uint8Array, iterations: number) {
@@ -61,10 +61,18 @@ export const authConfig = {
 export const parseUrlList = (urls?: string): string[] =>
   urls ? urls.split(',').map((u) => u.trim()).filter(Boolean) : [];
 
+// Cache auth instance per Worker isolate — re-creating betterAuth() per request is expensive
+// (re-initialises Kysely/D1 connection and all plugins on every request).
+let _auth: ReturnType<typeof betterAuth> | null = null;
+let _authKey: string | null = null;
+
 export const createAuth = (env: AppEnv) => {
   if (!env.BETTER_AUTH_SECRET || !env.BETTER_AUTH_URL) {
     throw new Error('Missing required environment variables: BETTER_AUTH_URL and BETTER_AUTH_SECRET');
   }
+
+  const envKey = `${env.BETTER_AUTH_URL}:${env.BETTER_AUTH_SECRET}`;
+  if (_auth && _authKey === envKey) return _auth;
 
   const trustedOrigins = [env.BETTER_AUTH_URL, ...parseUrlList(env.CLIENT_URLS)];
 
@@ -76,6 +84,14 @@ export const createAuth = (env: AppEnv) => {
     };
   }
 
+  const baseConfig = {
+    ...authConfig,
+    socialProviders,
+    baseURL: env.BETTER_AUTH_URL,
+    secret: env.BETTER_AUTH_SECRET,
+    trustedOrigins,
+  };
+
   // Cloudflare D1
   if (env.DATABASE) {
     const db = new Kysely({
@@ -84,32 +100,19 @@ export const createAuth = (env: AppEnv) => {
       }),
     });
 
-    return betterAuth({
-      ...authConfig,
-      socialProviders,
+    _auth = betterAuth({
+      ...baseConfig,
       database: { db, type: 'sqlite' },
-      baseURL: env.BETTER_AUTH_URL,
-      secret: env.BETTER_AUTH_SECRET,
-      trustedOrigins,
       advanced: {
-        defaultCookieAttributes: {
-          sameSite: 'none',
-          secure: true,
-        },
+        defaultCookieAttributes: { sameSite: 'none', secure: true, httpOnly: true },
       },
     });
+  } else {
+    // Bun SQLite (local dev or Bun deployment)
+    const { Database } = require('bun:sqlite');
+    _auth = betterAuth({ ...baseConfig, database: new Database('src/honomono.db') });
   }
 
-  // Bun SQLite (local dev or Bun deployment)
-  const { Database } = require('bun:sqlite');
-  const sqlite = new Database('src/honomono.db');
-
-  return betterAuth({
-    ...authConfig,
-    socialProviders,
-    database: sqlite,
-    baseURL: env.BETTER_AUTH_URL,
-    secret: env.BETTER_AUTH_SECRET,
-    trustedOrigins,
-  });
+  _authKey = envKey;
+  return _auth;
 };

@@ -1,5 +1,5 @@
 <template>
-  <div class="stack">
+  <section class="stack">
     <header class="inline-between">
       <h1>{{ item?.title ?? 'Untitled item' }}</h1>
       <RouterLink :to="{ name: 'items' }">Items</RouterLink>
@@ -16,7 +16,7 @@
         <p>{{ item.content }}</p>
       </li>
     </ul>
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">

@@ -1,15 +1,15 @@
 :root {
-  --color-bg: light-dark(hsl(0, 0%, 100%), hsl(265, 23%, 10%));
-  --color-bg-secondary: light-dark(hsl(0, 0%, 94%), hsl(268, 19%, 20%));
-  --color-button-fg: hsl(42, 100%, 15%);
+  --color-bg: light-dark(hsl(0, 0%, 100%), hsl(220, 23%, 10%));
+  --color-bg-secondary: light-dark(hsl(268, 23%, 94%), hsl(220, 23%, 20%));
+  --color-text: light-dark(hsl(220, 23%, 26%), hsl(220, 23%, 90%));
+  --color-text-secondary: light-dark(hsl(220, 23%, 40%), hsl(220, 23%, 60%));
+  --color-gradient: light-dark(hsl(210, 80%, 90%), hsl(220, 27%, 18%));
+  --color-button: hsl(210, 80%, 70%);
+  --color-button-secondary: hsl(210, 80%, 85%);
+  --color-button-fg: hsl(210, 80%, 10%);
+  --color-link: light-dark(hsl(210, 70%, 32%), hsl(210, 75%, 68%));
+  --color-link-hover: light-dark(hsl(210, 70%, 22%), hsl(210, 75%, 78%));
   --color-error: light-dark(hsl(2, 59%, 44%), hsl(5, 100%, 67%));
-  --color-gradient: light-dark(hsl(42, 100%, 95%), hsl(265, 27%, 18%));
-  --color-button: light-dark(hsl(42, 100%, 70%), hsl(42, 100%, 70%));
-  --color-button-secondary: light-dark(hsl(42, 100%, 60%), hsl(42, 100%, 40%));
-  --color-link: light-dark(hsl(221, 71%, 32%), hsl(221, 75%, 68%));
-  --color-link-hover: light-dark(hsl(221, 71%, 32%), hsl(221, 75%, 68%));
-  --color-text: light-dark(hsl(0, 0%, 20%), hsl(0, 0%, 90%));
-  --color-text-secondary: light-dark(hsl(0, 0%, 40%), hsl(0, 0%, 60%));
 
   --size-base: 0.75rem;
   --size-half: 0.375rem;
@@ -17,6 +17,7 @@
   --size-2x: 1.5rem;
   --size-3x: 2.5rem;
   --size-4x: 3rem;
+  --size-max-width-sm: 20rem;
   --font-size-small: 0.875rem;
 
   color-scheme: light dark;
@@ -50,16 +51,16 @@ html {
   color: var(--color-text);
   font-size: clamp(1rem, 2vw + 0.2rem, 1.35rem);
   line-height: 1.5;
-  padding: 0.75rem;
   text-size-adjust: none;
 }
 
 body {
   color: inherit;
   font-family: sans-serif;
-  margin: 1.5rem auto;
+  margin: 0 auto;
   max-width: 50rem;
-  min-height: 100vh;
+  min-height: 100dvh;
+  padding: var(--size-base);
 }
 
 p {
@@ -103,7 +104,7 @@ select {
   border-radius: var(--size-half);
   font: inherit;
   line-height: 1;
-  max-width: 20rem;
+  max-width: var(--size-max-width-sm);
   padding: var(--size-base);
 }
 
@@ -112,12 +113,13 @@ select {
 }
 
 input {
-  border: 1px solid var(--color-text-secondary);
+  border: 1.5px solid var(--color-text-secondary);
   height: var(--size-3x);
 }
 
 .inline-form > input:first-of-type {
   border-radius: var(--size-base) 0 0 var(--size-base);
+  border-right: none;
 }
 
 .inline-form > :last-child {
@@ -161,10 +163,11 @@ button {
 button:focus,
 button:hover {
   background-position: 50% 0;
+  transform: scale(1.02);
 }
 
 button:active {
-  transform: scale(0.97);
+  transform: scale(0.96);
 }
 
 :disabled {
