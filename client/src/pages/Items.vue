@@ -1,5 +1,5 @@
 <template>
-  <div class="stack">
+  <section class="stack">
     <header class="inline-between">
       <h1>Items</h1>
       <RouterLink :to="{ name: 'dashboard' }">Dashboard</RouterLink>
@@ -49,7 +49,7 @@
         </tr>
       </tbody>
     </table>
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">

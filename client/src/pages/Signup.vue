@@ -1,5 +1,5 @@
 <template>
-  <div class="stack">
+  <section class="stack">
     <h1>Sign Up</h1>
     <form @submit="handleSubmit" class="stack">
       <!-- Error Message Display -->
@@ -44,7 +44,7 @@
 
     <!-- <button type="button" @click="handleGithubSignup">Sign up with GitHub</button> -->
     <RouterLink :to="{ name: 'login' }">&larr; Back to Login</RouterLink>
-  </div>
+  </section>
 </template>
 
 <script setup lang="ts">
@@ -98,3 +98,10 @@ const handleAuthError = (error: any) => {
 //   await authClient.signIn.social({ provider: 'github' });
 // };
 </script>
+
+<style scoped>
+section {
+  max-width: var(--size-max-width-sm);
+  margin: auto;
+}
+</style>
