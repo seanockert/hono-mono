@@ -6,15 +6,17 @@
  *
  * Examples:
  *   bun run setup                       Prompts for model name (default: "item")
- *   bun run setup post                  Renames "item" → "post", plural "posts"
- *   bun run setup category categories   Renames "item" → "category"/"categories"
+ *   bun run setup post                  Renames "item" -> "post", plural "posts"
+ *   bun run setup category categories   Renames "item" -> "category"/"categories"
  */
 
-import { existsSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { root, resolveModel, runMigrate } from './lib';
+import { buildShared, formatFiles, resolveModel, root, runMigrate } from './lib';
 
 console.log('\n  Setting up hono-mono...\n');
+
+const ask = (question: string) => (process.stdin.isTTY ? (prompt(question) ?? '').trim() : '');
 
 // ─── 1. server/.env ──────────────────────────────────────────────────────────
 
@@ -25,8 +27,11 @@ if (existsSync(serverEnvPath)) {
 } else {
   const example = readFileSync(join(root, 'server/.env.example'), 'utf-8');
   const secret = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
-  const env = example.replace('your-super-secret-key-min-32-chars-long', secret);
-  writeFileSync(serverEnvPath, env, 'utf-8');
+  writeFileSync(
+    serverEnvPath,
+    example.replace('your-super-secret-key-min-32-chars-long', secret),
+    'utf-8',
+  );
   console.log('  ✓ server/.env created');
 }
 
@@ -41,114 +46,80 @@ if (existsSync(clientEnvPath)) {
   console.log('  ✓ client/.env.local created');
 }
 
-// ─── 3. Rename default model (optional) ──────────────────────────────────────
+// ─── 3. Rename the default model (optional) ──────────────────────────────────
 
-const rawArg = process.argv[2];
-const rawArgPlural = process.argv[3];
-const modelArg =
-  rawArg ?? (prompt('  Default model name (press Enter to keep "item"): ') ?? '').trim();
+const modelArg = process.argv[2] ?? ask('  Default model name (press Enter to keep "item"): ');
+const itemRoutePath = join(root, 'server/src/routes/items.ts');
 
 if (modelArg && modelArg.toLowerCase() !== 'item') {
-  const { defaultPlural } = resolveModel(modelArg);
-  const pluralArg =
-    rawArgPlural ??
-    (prompt(`  Plural form (press Enter to use "${defaultPlural}"): `) ?? '').trim();
-  const { model, Model, models, Models } = resolveModel(modelArg, pluralArg || undefined);
-
-  // Rename only if the original item files are present
-  const itemRoutePath = join(root, 'server/src/routes/items.ts');
   if (!existsSync(itemRoutePath)) {
     console.log('  ✓ Model already renamed - skipping');
   } else {
-    console.log(`  Renaming "item" → "${model}"...\n`);
+    const { defaultPlural } = resolveModel(modelArg);
+    const pluralArg =
+      process.argv[3] ?? ask(`  Plural form (press Enter to use "${defaultPlural}"): `);
+    const { model, Model, models, Models } = resolveModel(modelArg, pluralArg || undefined);
 
-    /** Replace all item/Item/items/Items variants */
-    const replaceContent = (content: string): string => {
-      return content
-        .replace(/\buseItems\b/g, `use${Models}`)
-        .replace(/\buseItem\b/g, `use${Model}`)
-        .replace(/\bItems\b/g, Models)
-        .replace(/\bItem\b/g, Model)
-        .replace(/\bitems\b/g, models)
-        .replace(/\bitem\b/g, model);
+    console.log(`\n  Renaming "item" -> "${model}"...\n`);
+
+    // `Item` is replaced inside compound identifiers too (ItemTable, fetchItems),
+    // so the DOM Storage methods are held aside first.
+    const HELD = '__STORAGE_ITEM__';
+    const replaceContent = (content: string) =>
+      content
+        .replace(/\.(get|set|remove)Item\b/g, `.$1${HELD}`)
+        .replaceAll('Items', Models)
+        .replaceAll('Item', Model)
+        .replace(/(?<![A-Za-z0-9])items(?![A-Za-z0-9])/g, models)
+        .replace(/(?<![A-Za-z0-9])item(?![A-Za-z0-9])/g, model)
+        .replaceAll(HELD, 'Item');
+
+    /** Rewrites a file, optionally renaming it. Returns the path written. */
+    const transform = (from: string, to = from) => {
+      const source = join(root, from);
+      if (!existsSync(source)) return null;
+
+      const target = join(root, to);
+      const content = replaceContent(readFileSync(source, 'utf-8'));
+      if (source !== target) unlinkSync(source);
+      writeFileSync(target, content, 'utf-8');
+      console.log(`    ${to}`);
+      return target;
     };
 
-    /** Transform a file in place */
-    const transformFile = (filePath: string) => {
-      const content = readFileSync(filePath, 'utf-8');
-      writeFileSync(filePath, replaceContent(content), 'utf-8');
-    };
+    const written = [
+      transform(
+        'server/migrations/0001_create_items.sql',
+        `server/migrations/0001_create_${models}.sql`,
+      ),
+      transform('server/src/routes/items.ts', `server/src/routes/${models}.ts`),
+      transform('server/src/lib/db.ts'),
+      transform('server/src/index.ts'),
+      transform('shared/src/types/item.ts', `shared/src/types/${model}.ts`),
+      transform('shared/src/types/index.ts'),
+      transform('client/src/composables/useItems.ts', `client/src/composables/use${Models}.ts`),
+      transform('client/src/pages/Items.vue', `client/src/pages/${Models}.vue`),
+      transform('client/src/pages/Item.vue', `client/src/pages/${Model}.vue`),
+      transform('client/src/router.ts'),
+      transform('client/src/pages/Dashboard.vue'),
+    ].filter((path) => path !== null);
 
-    /** Transform a file and rename it */
-    const transformAndRename = (oldPath: string, newPath: string) => {
-      const content = readFileSync(oldPath, 'utf-8');
-      writeFileSync(newPath, replaceContent(content), 'utf-8');
-      if (oldPath !== newPath) {
-        unlinkSync(oldPath);
-      }
-    };
+    formatFiles(written);
 
-    // Migration SQL
-    const migrationPath = join(root, 'server/migrations/0001_create_items.sql');
-    if (existsSync(migrationPath)) {
-      transformAndRename(migrationPath, join(root, `server/migrations/0001_create_${models}.sql`));
-      console.log(`    server/migrations/0001_create_${models}.sql`);
+    const missed = written.filter((path) => /item/i.test(readFileSync(path, 'utf-8')));
+    if (missed.length > 0) {
+      console.warn('\n  ⚠ "item" still appears in these files - check them by hand:');
+      for (const path of missed) console.warn(`    ${path.replace(`${root}/`, '')}`);
     }
-
-    // Server route
-    transformAndRename(itemRoutePath, join(root, `server/src/routes/${models}.ts`));
-    console.log(`    server/src/routes/${models}.ts`);
-
-    // Server db.ts
-    transformFile(join(root, 'server/src/lib/db.ts'));
-    console.log('    server/src/lib/db.ts');
-
-    // Server index.ts
-    transformFile(join(root, 'server/src/index.ts'));
-    console.log('    server/src/index.ts');
-
-    // Shared types
-    transformFile(join(root, 'shared/src/types/index.ts'));
-    console.log('    shared/src/types/index.ts');
-
-    // Client composable
-    const composableSrc = join(root, 'client/src/composables/useItems.ts');
-    if (existsSync(composableSrc)) {
-      transformAndRename(composableSrc, join(root, `client/src/composables/use${Models}.ts`));
-      console.log(`    client/src/composables/use${Models}.ts`);
-    }
-
-    // Client list page
-    const listPageSrc = join(root, 'client/src/pages/Items.vue');
-    if (existsSync(listPageSrc)) {
-      transformAndRename(listPageSrc, join(root, `client/src/pages/${Models}.vue`));
-      console.log(`    client/src/pages/${Models}.vue`);
-    }
-
-    // Client detail page
-    const detailPageSrc = join(root, 'client/src/pages/Item.vue');
-    if (existsSync(detailPageSrc)) {
-      transformAndRename(detailPageSrc, join(root, `client/src/pages/${Model}.vue`));
-      console.log(`    client/src/pages/${Model}.vue`);
-    }
-
-    // Client router
-    transformFile(join(root, 'client/src/router.ts'));
-    console.log('    client/src/router.ts');
-
-    // Client dashboard (contains route links to items)
-    transformFile(join(root, 'client/src/pages/Dashboard.vue'));
-    console.log('    client/src/pages/Dashboard.vue');
 
     console.log('');
   }
 }
 
-// ─── 4. Migrations ───────────────────────────────────────────────────────────
+// ─── 4. Build and migrate ────────────────────────────────────────────────────
 
+buildShared();
 runMigrate();
-
-// ─── Done ────────────────────────────────────────────────────────────────────
 
 console.log(`
   Setup complete!

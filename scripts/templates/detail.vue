@@ -1,31 +1,31 @@
 <template>
   <section class="stack">
     <header class="inline-between">
-      <h1>{{ item?.title ?? 'Untitled item' }}</h1>
-      <RouterLink :to="{ name: 'items' }">Items</RouterLink>
+      <h1>{{ __model__?.title ?? 'Untitled __model__' }}</h1>
+      <RouterLink :to="{ name: '__models__' }">__Models__</RouterLink>
     </header>
 
     <div v-if="isLoading">Loading...</div>
     <div v-else-if="error" class="error-message">{{ error }}</div>
-    <ul v-else-if="item" class="stack-half">
+    <ul v-else-if="__model__" class="stack-half">
       <li>
         <div>Slug:</div>
-        {{ item.slug }}
+        {{ __model__.slug }}
       </li>
       <li>
         <div>Status:</div>
-        {{ item.status }}
+        {{ __model__.status }}
       </li>
       <li>
         <div>Created:</div>
-        {{ new Date(item.createdAt).toLocaleString() }}
+        {{ new Date(__model__.createdAt).toLocaleString() }}
       </li>
       <li>
         <div>Updated:</div>
-        {{ new Date(item.updatedAt).toLocaleString() }}
+        {{ new Date(__model__.updatedAt).toLocaleString() }}
       </li>
-      <li v-if="item.content">
-        <p>{{ item.content }}</p>
+      <li v-if="__model__.content">
+        <p>{{ __model__.content }}</p>
       </li>
     </ul>
   </section>
@@ -33,10 +33,10 @@
 
 <script setup lang="ts">
 import { RouterLink, useRoute } from 'vue-router';
-import { useItem } from '../composables/useItems';
+import { use__Model__ } from '../composables/use__Models__';
 
 const route = useRoute();
-const { row: item, isLoading, error } = useItem(() => route.params.slug as string);
+const { row: __model__, isLoading, error } = use__Model__(() => route.params.slug as string);
 </script>
 
 <style scoped>

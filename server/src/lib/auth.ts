@@ -2,7 +2,8 @@ import { betterAuth } from 'better-auth';
 import { admin, bearer } from 'better-auth/plugins';
 import { Kysely } from 'kysely';
 import { D1Dialect } from 'kysely-d1';
-import type { AppEnv } from '../index';
+import { dbPath } from './db';
+import type { AppEnv } from './env';
 
 // scrypt, better-auth's default, exceeds the Workers CPU limit and gives 503 on sign-up.
 // PBKDF2 from Web Crypto works in Workers and Bun.
@@ -119,7 +120,7 @@ const createAuthInstance = (env: AppEnv) => {
 
   // Bun SQLite (local dev or Bun deployment)
   const { Database } = require('bun:sqlite');
-  return betterAuth({ ...baseConfig, database: new Database('src/honomono.db') });
+  return betterAuth({ ...baseConfig, database: new Database(dbPath()) });
 };
 
 // One auth instance per Worker isolate. betterAuth() is expensive: it re-initialises

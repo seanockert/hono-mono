@@ -1,13 +1,19 @@
 <template>
   <section class="stack">
     <header class="inline-between">
-      <h1>Items</h1>
+      <h1>__Models__</h1>
       <RouterLink :to="{ name: 'dashboard' }">Dashboard</RouterLink>
     </header>
 
     <form v-if="session" class="inline-zero inline-form" @submit.prevent="handleCreate">
       <label for="newTitle" hidden>Update title</label>
-      <input v-model="newTitle" id="newTitle" placeholder="New item title" autofocus required />
+      <input
+        v-model="newTitle"
+        id="newTitle"
+        placeholder="New __model__ title"
+        autofocus
+        required
+      />
       <button type="submit" :disabled="isCreating">
         {{ isCreating ? 'Adding...' : 'Add' }}
       </button>
@@ -15,7 +21,7 @@
 
     <div v-if="isLoading">Loading...</div>
     <div v-else-if="error" class="error-message">{{ error }}</div>
-    <div v-else-if="!items.length">No items yet.</div>
+    <div v-else-if="!__models__.length">No __models__ yet.</div>
 
     <table v-else>
       <thead>
@@ -28,22 +34,22 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="item in items" :key="item.id">
+        <tr v-for="__model__ in __models__" :key="__model__.id">
           <td>
-            <RouterLink :to="{ name: 'item', params: { slug: item.slug } }">
-              {{ item.title }}
+            <RouterLink :to="{ name: '__model__', params: { slug: __model__.slug } }">
+              {{ __model__.title }}
             </RouterLink>
           </td>
-          <td>{{ item.slug }}</td>
-          <td>{{ item.status }}</td>
-          <td>{{ new Date(item.createdAt).toLocaleDateString() }}</td>
+          <td>{{ __model__.slug }}</td>
+          <td>{{ __model__.status }}</td>
+          <td>{{ new Date(__model__.createdAt).toLocaleDateString() }}</td>
           <td v-if="session">
             <button
-              @click="handleDelete(item.id)"
-              :disabled="deletingId === item.id"
+              @click="handleDelete(__model__.id)"
+              :disabled="deletingId === __model__.id"
               class="button-secondary button-small"
             >
-              {{ deletingId === item.id ? 'Deleting...' : 'Delete' }}
+              {{ deletingId === __model__.id ? 'Deleting...' : 'Delete' }}
             </button>
           </td>
         </tr>
@@ -56,11 +62,17 @@
 import { ref, computed } from 'vue';
 import { RouterLink } from 'vue-router';
 import { authClient } from '../lib/auth-client';
-import { useItems } from '../composables/useItems';
+import { use__Models__ } from '../composables/use__Models__';
 
 const sessionData = authClient.useSession();
 const session = computed(() => sessionData.value.data);
-const { rows: items, isLoading, error, create: createItem, remove: deleteItem } = useItems();
+const {
+  rows: __models__,
+  isLoading,
+  error,
+  create: create__Model__,
+  remove: delete__Model__,
+} = use__Models__();
 
 const newTitle = ref('');
 const isCreating = ref(false);
@@ -69,22 +81,22 @@ const deletingId = ref<string | null>(null);
 const handleCreate = async () => {
   isCreating.value = true;
   try {
-    await createItem({ title: newTitle.value });
+    await create__Model__({ title: newTitle.value });
     newTitle.value = '';
   } catch (err) {
-    alert(err instanceof Error ? err.message : 'Failed to create item');
+    alert(err instanceof Error ? err.message : 'Failed to create __model__');
   } finally {
     isCreating.value = false;
   }
 };
 
 const handleDelete = async (id: string) => {
-  if (!confirm('Delete this item?')) return;
+  if (!confirm('Delete this __model__?')) return;
   deletingId.value = id;
   try {
-    await deleteItem(id);
+    await delete__Model__(id);
   } catch (err) {
-    alert(err instanceof Error ? err.message : 'Failed to delete item');
+    alert(err instanceof Error ? err.message : 'Failed to delete __model__');
   } finally {
     deletingId.value = null;
   }
