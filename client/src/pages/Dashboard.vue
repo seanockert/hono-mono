@@ -15,7 +15,13 @@
           <strong>Name:</strong>
           <form class="inline-zero inline-form" @submit.prevent="handleUpdateName">
             <label for="newName" hidden>Update name</label>
-            <input v-model="newName" id="newName" type="text" :placeholder="session.user.name" :disabled="isUpdating" />
+            <input
+              v-model="newName"
+              id="newName"
+              type="text"
+              :placeholder="session.user.name"
+              :disabled="isUpdating"
+            />
             <button type="submit">Update</button>
           </form>
 
@@ -87,6 +93,6 @@ const handleUpdateName = async (e: Event) => {
 const handleSignOut = async () => {
   clearStoredToken();
   await authClient.signOut();
-  // Navigation to login is handled automatically by App.vue watchEffect
+  // The App.vue watchEffect navigates to login
 };
 </script>

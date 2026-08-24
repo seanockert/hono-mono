@@ -25,9 +25,7 @@
         {{ isLoggingIn ? 'Logging in...' : 'Login' }}
       </button>
 
-      <div class="inline-quarter">
-        or <RouterLink :to="{ name: 'signup' }">sign up</RouterLink>
-      </div>
+      <div class="inline-quarter">or <RouterLink :to="{ name: 'signup' }">sign up</RouterLink></div>
       <!-- <button @click="handleGithubLogin">Login with GitHub</button> -->
     </form>
 
@@ -51,7 +49,7 @@ const password = ref('');
 const errorMessage = ref('');
 const isLoggingIn = ref(false);
 
-// Clear error when user starts typing
+// Clear the error when the user types
 watch([email, password], () => {
   if (errorMessage.value) {
     errorMessage.value = '';
@@ -71,7 +69,7 @@ const handleLogin = async () => {
     if (result.error) {
       handleAuthError(result.error);
     }
-    // Navigation after successful login is handled by App.vue watchEffect
+    // The App.vue watchEffect navigates after login
   } catch (error: any) {
     handleAuthError(error);
   } finally {

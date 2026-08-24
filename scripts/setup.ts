@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * One-command setup script — idempotent, safe to re-run.
+ * One-command setup script. Idempotent, safe to re-run.
  *
  * Usage: bun run setup [modelName] [pluralName]
  *
@@ -21,7 +21,7 @@ console.log('\n  Setting up hono-mono...\n');
 const serverEnvPath = join(root, 'server/.env');
 
 if (existsSync(serverEnvPath)) {
-  console.log('  ✓ server/.env already exists — skipping');
+  console.log('  ✓ server/.env already exists - skipping');
 } else {
   const example = readFileSync(join(root, 'server/.env.example'), 'utf-8');
   const secret = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
@@ -35,7 +35,7 @@ if (existsSync(serverEnvPath)) {
 const clientEnvPath = join(root, 'client/.env.local');
 
 if (existsSync(clientEnvPath)) {
-  console.log('  ✓ client/.env.local already exists — skipping');
+  console.log('  ✓ client/.env.local already exists - skipping');
 } else {
   writeFileSync(clientEnvPath, 'VITE_SERVER_URL=http://localhost:3000\n', 'utf-8');
   console.log('  ✓ client/.env.local created');
@@ -45,7 +45,8 @@ if (existsSync(clientEnvPath)) {
 
 const rawArg = process.argv[2];
 const rawArgPlural = process.argv[3];
-const modelArg = rawArg ?? (prompt('  Default model name (press Enter to keep "item"): ') ?? '').trim();
+const modelArg =
+  rawArg ?? (prompt('  Default model name (press Enter to keep "item"): ') ?? '').trim();
 
 if (modelArg && modelArg.toLowerCase() !== 'item') {
   const { defaultPlural } = resolveModel(modelArg);
@@ -54,14 +55,14 @@ if (modelArg && modelArg.toLowerCase() !== 'item') {
     (prompt(`  Plural form (press Enter to use "${defaultPlural}"): `) ?? '').trim();
   const { model, Model, models, Models } = resolveModel(modelArg, pluralArg || undefined);
 
-  // Guard: only rename if the original item files still exist
+  // Rename only if the original item files are present
   const itemRoutePath = join(root, 'server/src/routes/items.ts');
   if (!existsSync(itemRoutePath)) {
-    console.log('  ✓ Model already renamed — skipping');
+    console.log('  ✓ Model already renamed - skipping');
   } else {
     console.log(`  Renaming "item" → "${model}"...\n`);
 
-    /** Replace all item/Item/items/Items variants in file content */
+    /** Replace all item/Item/items/Items variants */
     const replaceContent = (content: string): string => {
       return content
         .replace(/\buseItems\b/g, `use${Models}`)
@@ -72,13 +73,13 @@ if (modelArg && modelArg.toLowerCase() !== 'item') {
         .replace(/\bitem\b/g, model);
     };
 
-    /** Read, transform, and write a file in place */
+    /** Transform a file in place */
     const transformFile = (filePath: string) => {
       const content = readFileSync(filePath, 'utf-8');
       writeFileSync(filePath, replaceContent(content), 'utf-8');
     };
 
-    /** Read, transform, rename a file */
+    /** Transform a file and rename it */
     const transformAndRename = (oldPath: string, newPath: string) => {
       const content = readFileSync(oldPath, 'utf-8');
       writeFileSync(newPath, replaceContent(content), 'utf-8');
@@ -90,18 +91,12 @@ if (modelArg && modelArg.toLowerCase() !== 'item') {
     // Migration SQL
     const migrationPath = join(root, 'server/migrations/0001_create_items.sql');
     if (existsSync(migrationPath)) {
-      transformAndRename(
-        migrationPath,
-        join(root, `server/migrations/0001_create_${models}.sql`),
-      );
+      transformAndRename(migrationPath, join(root, `server/migrations/0001_create_${models}.sql`));
       console.log(`    server/migrations/0001_create_${models}.sql`);
     }
 
     // Server route
-    transformAndRename(
-      itemRoutePath,
-      join(root, `server/src/routes/${models}.ts`),
-    );
+    transformAndRename(itemRoutePath, join(root, `server/src/routes/${models}.ts`));
     console.log(`    server/src/routes/${models}.ts`);
 
     // Server db.ts
@@ -119,30 +114,21 @@ if (modelArg && modelArg.toLowerCase() !== 'item') {
     // Client composable
     const composableSrc = join(root, 'client/src/composables/useItems.ts');
     if (existsSync(composableSrc)) {
-      transformAndRename(
-        composableSrc,
-        join(root, `client/src/composables/use${Models}.ts`),
-      );
+      transformAndRename(composableSrc, join(root, `client/src/composables/use${Models}.ts`));
       console.log(`    client/src/composables/use${Models}.ts`);
     }
 
     // Client list page
     const listPageSrc = join(root, 'client/src/pages/Items.vue');
     if (existsSync(listPageSrc)) {
-      transformAndRename(
-        listPageSrc,
-        join(root, `client/src/pages/${Models}.vue`),
-      );
+      transformAndRename(listPageSrc, join(root, `client/src/pages/${Models}.vue`));
       console.log(`    client/src/pages/${Models}.vue`);
     }
 
     // Client detail page
     const detailPageSrc = join(root, 'client/src/pages/Item.vue');
     if (existsSync(detailPageSrc)) {
-      transformAndRename(
-        detailPageSrc,
-        join(root, `client/src/pages/${Model}.vue`),
-      );
+      transformAndRename(detailPageSrc, join(root, `client/src/pages/${Model}.vue`));
       console.log(`    client/src/pages/${Model}.vue`);
     }
 

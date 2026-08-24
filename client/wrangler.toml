@@ -1,5 +1,5 @@
 name = "hono-mono-client"
-compatibility_date = "2025-02-13"
+compatibility_date = "2026-08-24"
 pages_build_output_dir = "./dist"
 
 # Build uses VITE_SERVER_URL from .env.production automatically

@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 /**
- * Cloudflare deployment setup — creates D1 database, generates wrangler.toml,
- * sets secrets, and runs remote migrations.
+ * Cloudflare deployment setup: makes the D1 database, generates wrangler.toml,
+ * sets the secrets, and runs the remote migrations.
  *
  * Usage: bun run deploy:setup <appName>
  * Example: bun run deploy:setup hono-mono
@@ -58,7 +58,7 @@ if (listResult.exitCode === 0) {
       console.log(`  ✓ D1 database "${dbName}" already exists (${databaseId})`);
     }
   } catch {
-    // Parse failed, will try to create
+    // Parse failed. Create the database below.
   }
 }
 
@@ -75,7 +75,8 @@ if (!databaseId) {
   }
 
   const output = createResult.stdout.toString();
-  const match = output.match(/"database_id":\s*"([^"]+)"/) || output.match(/database_id\s*=\s*"([^"]+)"/);
+  const match =
+    output.match(/"database_id":\s*"([^"]+)"/) || output.match(/database_id\s*=\s*"([^"]+)"/);
   if (!match) {
     console.error(`  ✗ Could not parse database_id from wrangler output:\n${output}`);
     process.exit(1);
@@ -132,7 +133,7 @@ const wranglerExamplePath = join(root, 'server/wrangler.toml.example');
 const wranglerPath = join(root, 'server/wrangler.toml');
 
 if (existsSync(wranglerPath)) {
-  console.log('  ✓ server/wrangler.toml already exists — skipping');
+  console.log('  ✓ server/wrangler.toml already exists - skipping');
 } else {
   let toml = readFileSync(wranglerExamplePath, 'utf-8');
   toml = toml.replace(/name = ".*?"/, `name = "${appName}"`);
@@ -157,24 +158,23 @@ if (existsSync(serverEnvPath)) {
 
 if (secret) {
   console.log('  Setting BETTER_AUTH_SECRET...');
-  const secretResult = Bun.spawnSync(
-    ['bunx', 'wrangler', 'secret', 'put', 'BETTER_AUTH_SECRET'],
-    {
-      cwd: join(root, 'server'),
-      stdin: Buffer.from(secret),
-      stdout: 'pipe',
-      stderr: 'pipe',
-    },
-  );
+  const secretResult = Bun.spawnSync(['bunx', 'wrangler', 'secret', 'put', 'BETTER_AUTH_SECRET'], {
+    cwd: join(root, 'server'),
+    stdin: Buffer.from(secret),
+    stdout: 'pipe',
+    stderr: 'pipe',
+  });
 
   if (secretResult.exitCode === 0) {
     console.log('  ✓ BETTER_AUTH_SECRET set');
   } else {
     console.warn(`  ⚠ Failed to set secret: ${secretResult.stderr.toString()}`);
-    console.warn('    Set it manually: echo "your-secret" | bunx wrangler secret put BETTER_AUTH_SECRET');
+    console.warn(
+      '    Set it manually: echo "your-secret" | bunx wrangler secret put BETTER_AUTH_SECRET',
+    );
   }
 } else {
-  console.warn('  ⚠ No BETTER_AUTH_SECRET found in server/.env — set it manually:');
+  console.warn('  ⚠ No BETTER_AUTH_SECRET found in server/.env - set it manually:');
   console.warn('    echo "your-secret" | bunx wrangler secret put BETTER_AUTH_SECRET');
 }
 
@@ -191,7 +191,7 @@ const migrateResult = Bun.spawnSync(
 );
 
 if (migrateResult.exitCode !== 0) {
-  console.warn('  ⚠ Remote migrations failed — you may need to run them manually:');
+  console.warn('  ⚠ Remote migrations failed - you may need to run them manually:');
   console.warn(`    cd server && bunx wrangler d1 migrations apply ${dbName} --remote`);
 }
 
@@ -199,7 +199,7 @@ if (migrateResult.exitCode !== 0) {
 
 const clientEnvProdPath = join(root, 'client/.env.production');
 if (existsSync(clientEnvProdPath)) {
-  console.log('  ✓ client/.env.production already exists — skipping');
+  console.log('  ✓ client/.env.production already exists - skipping');
 } else {
   writeFileSync(clientEnvProdPath, `VITE_SERVER_URL=${workerUrl}\n`, 'utf-8');
   console.log('  ✓ client/.env.production generated');

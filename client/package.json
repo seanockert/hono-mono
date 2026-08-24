@@ -8,6 +8,7 @@
     "build": "vue-tsc -b && vite build",
     "build:prod": "vue-tsc -b && vite build --mode production",
     "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit",
     "deploy": "bun run build:prod && bunx wrangler pages deploy dist --project-name=hono-mono-client",
     "deploy:dev": "bun run build && bunx wrangler pages deploy dist --project-name=hono-mono-client",
     "lint": "oxlint --ignore-path ../.gitignore .",
@@ -15,16 +16,15 @@
     "format:check": "oxfmt --ignore-path ../.gitignore --check ."
   },
   "dependencies": {
-    "vue-router": "^4.5.1",
-    "better-auth": "^1.5.5",
+    "better-auth": "^1.7.1",
     "shared": "workspace:*",
-    "vue": "^3.5.30"
+    "vue": "^3.5.41",
+    "vue-router": "^5.2.0"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^6.0.5",
-    "@vue/tsconfig": "^0.9.0",
-    "typescript": "^5.9.3",
-    "vite": "^8.0.0",
-    "vue-tsc": "^3.2.6"
+    "@vitejs/plugin-vue": "^6.0.8",
+    "typescript": "^6.0.3",
+    "vite": "^8.2.2",
+    "vue-tsc": "^3.3.11"
   }
 }
