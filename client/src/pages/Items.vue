@@ -13,11 +13,11 @@
       </button>
     </form>
 
-    <div v-if="isLoading">Loading...</div>
+    <div v-if="showLoading">Loading...</div>
     <div v-else-if="error" class="error-message">{{ error }}</div>
-    <div v-else-if="!items.length">No items yet.</div>
+    <div v-else-if="hasLoaded && !items.length">No items yet.</div>
 
-    <table v-else>
+    <table v-else-if="items.length">
       <thead>
         <tr>
           <th>Title</th>
@@ -60,7 +60,14 @@ import { useItems } from '../composables/useItems';
 
 const sessionData = authClient.useSession();
 const session = computed(() => sessionData.value.data);
-const { rows: items, isLoading, error, create: createItem, remove: deleteItem } = useItems();
+const {
+  rows: items,
+  showLoading,
+  hasLoaded,
+  error,
+  create: createItem,
+  remove: deleteItem,
+} = useItems();
 
 const newTitle = ref('');
 const isCreating = ref(false);

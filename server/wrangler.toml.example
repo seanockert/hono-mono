@@ -3,6 +3,11 @@ main = "src/index.ts"
 compatibility_date = "2026-08-24"
 compatibility_flags = ["nodejs_compat"]
 
+# D1 is single-region. Running the Worker next to the database costs one round
+# trip to reach it, instead of one per query from the user's location.
+[placement]
+mode = "smart"
+
 [alias]
 "bun:sqlite" = "./src/lib/bun-sqlite-stub.ts"
 

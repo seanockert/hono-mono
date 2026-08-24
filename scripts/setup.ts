@@ -88,10 +88,8 @@ if (modelArg && modelArg.toLowerCase() !== 'item') {
     };
 
     const written = [
-      transform(
-        'server/migrations/0001_create_items.sql',
-        `server/migrations/0001_create_${models}.sql`,
-      ),
+      // The schema is one file, so it is rewritten in place, not renamed.
+      transform('server/migrations/0000_initial.sql'),
       transform('server/src/routes/items.ts', `server/src/routes/${models}.ts`),
       transform('server/src/lib/db.ts'),
       transform('server/src/index.ts'),

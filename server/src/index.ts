@@ -29,6 +29,9 @@ app.use('*', async (c, next) => {
       credentials: true,
       allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowHeaders: ['Content-Type', 'Authorization'],
+      // If the client is on a different origin, every request is preflighted.
+      // Without this the browser repeats the preflight on each one.
+      maxAge: 86400,
     });
   }
 

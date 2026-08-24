@@ -56,6 +56,10 @@ async function verifyPassword({
 export const authConfig = {
   emailAndPassword: { enabled: true, password: { hash: hashPassword, verify: verifyPassword } },
   plugins: [admin(), bearer()],
+  // Reads the session from a signed cookie instead of the database. Saves one D1
+  // round trip on every getSession call. Falls back to the database when the cookie
+  // is absent, which is the case in browsers that block third-party cookies.
+  session: { cookieCache: { enabled: true, maxAge: 300 } },
   user: {
     additionalFields: {
       role: {
