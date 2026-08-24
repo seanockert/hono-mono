@@ -30,16 +30,14 @@ const updateSchema = z.object({
 
 const items = new Hono<{ Bindings: AppEnv; Variables: AuthVariables }>();
 
-// GET / — paginated list with filtering and sorting
+// GET / - paginated list with filters and sorting
 items.get('/', zValidator('query', listSchema), async (c) => {
   const { page, limit, search, status, sortBy, sortOrder } = c.req.valid('query');
   const db = createDb(getEnv(c.env));
   const offset = (page - 1) * limit;
 
   let query = db.selectFrom('item').selectAll();
-  let countQuery = db
-    .selectFrom('item')
-    .select((eb) => eb.fn.countAll<number>().as('count'));
+  let countQuery = db.selectFrom('item').select((eb) => eb.fn.countAll<number>().as('count'));
 
   if (search) {
     const pattern = `%${search}%`;
@@ -70,7 +68,7 @@ items.get('/', zValidator('query', listSchema), async (c) => {
   });
 });
 
-// GET /:idOrSlug — fetch by UUID or slug
+// GET /:idOrSlug - get by UUID or slug
 items.get('/:idOrSlug', async (c) => {
   const idOrSlug = c.req.param('idOrSlug');
   const db = createDb(getEnv(c.env));
@@ -86,7 +84,7 @@ items.get('/:idOrSlug', async (c) => {
   return c.json(item);
 });
 
-// POST / — create item (auth required)
+// POST / - create an item (auth required)
 items.post('/', requireAuth, zValidator('json', createSchema), async (c) => {
   const { title, content, status } = c.req.valid('json');
   const session = c.get('session');
@@ -95,7 +93,11 @@ items.post('/', requireAuth, zValidator('json', createSchema), async (c) => {
 
   // Generate unique slug
   let slug = slugify(title);
-  let existing = await db.selectFrom('item').select('id').where('slug', '=', slug).executeTakeFirst();
+  let existing = await db
+    .selectFrom('item')
+    .select('id')
+    .where('slug', '=', slug)
+    .executeTakeFirst();
   let counter = 2;
   while (existing) {
     slug = `${slugify(title)}-${counter++}`;
@@ -121,7 +123,7 @@ items.post('/', requireAuth, zValidator('json', createSchema), async (c) => {
   return c.json(item, 201);
 });
 
-// PUT /:id — partial update (auth required)
+// PUT /:id - partial update (auth required)
 items.put('/:id', requireAuth, zValidator('json', updateSchema), async (c) => {
   const id = c.req.param('id');
   const updates = c.req.valid('json');
@@ -168,7 +170,7 @@ items.put('/:id', requireAuth, zValidator('json', updateSchema), async (c) => {
   return c.json(updated);
 });
 
-// DELETE /:id — hard delete (auth required)
+// DELETE /:id - hard delete (auth required)
 items.delete('/:id', requireAuth, async (c) => {
   const id = c.req.param('id');
   const db = createDb(getEnv(c.env));

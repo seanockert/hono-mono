@@ -17,10 +17,9 @@ const ENV_KEYS = [
 ];
 
 /** Merge Cloudflare bindings (c.env) with process.env for Bun/Node */
-export const getEnv = (bindings: AppEnv): AppEnv => ({
-  ...Object.fromEntries(
+export const getEnv = (bindings: AppEnv): AppEnv =>
+  Object.fromEntries(
     Object.keys(bindings).length > 0
       ? Object.entries(bindings)
       : Object.entries(process.env).filter(([k]) => ENV_KEYS.includes(k)),
-  ),
-});
+  );
