@@ -23,7 +23,7 @@ const spawned = cmds.map((cmd) =>
   }),
 );
 
-// Wait until the client dev server is accepting connections before opening
+// Wait for the client dev server to accept connections
 async function waitForUrl(url: string, intervalMs = 250, timeoutMs = 30_000) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {

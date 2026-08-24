@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Model scaffolder — generates CRUD boilerplate for a new model.
+ * Model scaffolder: generates the CRUD boilerplate for a new model.
  *
  * Usage:
  *   bun run generate <modelName> [pluralName]
@@ -23,7 +23,10 @@ if (!modelArg) {
 }
 
 const { model, Model, models, Models } = resolveModel(modelArg, process.argv[3]);
-const timestamp = new Date().toISOString().replace(/\.\d{3}Z$/, '').replace(/[T:]/g, '-');
+const timestamp = new Date()
+  .toISOString()
+  .replace(/\.\d{3}Z$/, '')
+  .replace(/[T:]/g, '-');
 
 const writeFile = (path: string, content: string) => {
   const dir = dirname(path);
@@ -509,7 +512,7 @@ writeFile(composablePath, composableContent);
 writeFile(listPagePath, listPageContent);
 writeFile(detailPagePath, detailPageContent);
 
-// ─── Patch A — server/src/lib/db.ts ──────────────────────────────────────────
+// ─── Patch A - server/src/lib/db.ts ──────────────────────────────────────────
 
 const dbTsPath = join(root, 'server/src/lib/db.ts');
 let dbTs = readFileSync(dbTsPath, 'utf-8');
@@ -531,8 +534,11 @@ const tableInterface = `export interface ${Model}Table {
 if (dbTs.includes(`interface ${Model}Table`)) {
   console.log(`  Skipped: ${Model}Table already in db.ts`);
 } else {
-  dbTs = dbTs.replace('export interface AppDatabase {', tableInterface + 'export interface AppDatabase {');
-  console.log(`  Patched: server/src/lib/db.ts — added ${Model}Table interface`);
+  dbTs = dbTs.replace(
+    'export interface AppDatabase {',
+    tableInterface + 'export interface AppDatabase {',
+  );
+  console.log(`  Patched: server/src/lib/db.ts - added ${Model}Table interface`);
 }
 
 const dbEntry = `  ${model}: ${Model}Table;`;
@@ -540,12 +546,12 @@ if (dbTs.includes(dbEntry)) {
   console.log(`  Skipped: ${model} already in AppDatabase`);
 } else {
   dbTs = dbTs.replace(/^(export interface AppDatabase \{[^}]*)(\})/ms, `$1${dbEntry}\n$2`);
-  console.log(`  Patched: server/src/lib/db.ts — added ${model} to AppDatabase`);
+  console.log(`  Patched: server/src/lib/db.ts - added ${model} to AppDatabase`);
 }
 
 if (dbTs !== dbTsOriginal) writeFileSync(dbTsPath, dbTs, 'utf-8');
 
-// ─── Patch B — server/src/index.ts ───────────────────────────────────────────
+// ─── Patch B - server/src/index.ts ───────────────────────────────────────────
 
 const indexPath = join(root, 'server/src/index.ts');
 let indexTs = readFileSync(indexPath, 'utf-8');
@@ -559,7 +565,7 @@ if (indexTs.includes(importLine)) {
     /(import \w+ from '\.\/routes\/[^']+';)(?![\s\S]*import \w+ from '\.\/routes\/)/,
     `$1\n${importLine}`,
   );
-  console.log(`  Patched: server/src/index.ts — added ${models} import`);
+  console.log(`  Patched: server/src/index.ts - added ${models} import`);
 }
 
 const routeLine = `app.route('/api/${models}', ${models});`;
@@ -567,12 +573,12 @@ if (indexTs.includes(routeLine)) {
   console.log(`  Skipped: ${models} route already in index.ts`);
 } else {
   indexTs = indexTs.replace('export default app;', `${routeLine}\n\nexport default app;`);
-  console.log(`  Patched: server/src/index.ts — mounted /api/${models}`);
+  console.log(`  Patched: server/src/index.ts - mounted /api/${models}`);
 }
 
 if (indexTs !== indexTsOriginal) writeFileSync(indexPath, indexTs, 'utf-8');
 
-// ─── Patch C — shared/src/types/index.ts ─────────────────────────────────────
+// ─── Patch C - shared/src/types/index.ts ─────────────────────────────────────
 
 const sharedTypesPath = join(root, 'shared/src/types/index.ts');
 let sharedTypes = readFileSync(sharedTypesPath, 'utf-8');
@@ -583,10 +589,10 @@ if (sharedTypes.includes(reExport)) {
 } else {
   sharedTypes = sharedTypes.trimEnd() + '\n\n' + reExport + '\n';
   writeFileSync(sharedTypesPath, sharedTypes, 'utf-8');
-  console.log(`  Patched: shared/src/types/index.ts — added ${Model} re-export`);
+  console.log(`  Patched: shared/src/types/index.ts - added ${Model} re-export`);
 }
 
-// ─── Patch D — client/src/router.ts ──────────────────────────────────────────
+// ─── Patch D - client/src/router.ts ──────────────────────────────────────────
 
 const routerPath = join(root, 'client/src/router.ts');
 let routerTs = readFileSync(routerPath, 'utf-8');
@@ -600,7 +606,7 @@ if (!routerTs.includes(pageImportPlural)) {
     /(import \w+ from '\.\/pages\/[^']+';)(?![\s\S]*import \w+ from '\.\/pages\/)/,
     `$1\n${pageImportPlural}\n${pageImportSingle}`,
   );
-  console.log(`  Patched: client/src/router.ts — added page imports`);
+  console.log(`  Patched: client/src/router.ts - added page imports`);
 }
 
 const listRoute = `  { name: '${models}', path: '/${models}', component: ${Models} },`;
@@ -611,12 +617,12 @@ if (!routerTs.includes(`name: '${models}'`)) {
     `  { name: 'not-found'`,
     `${listRoute}\n${detailRoute}\n  { name: 'not-found'`,
   );
-  console.log(`  Patched: client/src/router.ts — added routes`);
+  console.log(`  Patched: client/src/router.ts - added routes`);
 }
 
 if (routerTs !== routerTsOriginal) writeFileSync(routerPath, routerTs, 'utf-8');
 
-// ─── Patch E — run migration ──────────────────────────────────────────────────
+// ─── Patch E - run migration ──────────────────────────────────────────────────
 
 runMigrate();
 

@@ -34,7 +34,7 @@ export const getErrorMessage = (error: { code?: string; message?: string } | nul
     return ERROR_MESSAGES.unexpected;
   }
 
-  // Prefer error code matching when available
+  // Match on the error code first
   if (error.code) {
     const code = error.code.toLowerCase();
     for (const [key, value] of Object.entries(ERROR_MESSAGES)) {

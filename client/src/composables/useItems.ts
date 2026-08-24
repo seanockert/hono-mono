@@ -39,11 +39,7 @@ export const useItems = () => {
     }
   };
 
-  const createItem = async (data: {
-    title: string;
-    content?: string;
-    status?: Item['status'];
-  }) => {
+  const createItem = async (data: { title: string; content?: string; status?: Item['status'] }) => {
     const res = await fetch(`${SERVER_URL}/api/items`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...authHeaders() },

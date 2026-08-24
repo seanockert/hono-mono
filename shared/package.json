@@ -6,11 +6,12 @@
   "scripts": {
     "build": "bunx --bun tsc",
     "dev": "bunx --bun tsc --watch",
+    "typecheck": "tsc --noEmit",
     "lint": "oxlint --ignore-path ../.gitignore .",
     "format": "oxfmt --ignore-path ../.gitignore .",
     "format:check": "oxfmt --ignore-path ../.gitignore --check ."
   },
   "devDependencies": {
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.3"
   }
 }

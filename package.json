@@ -25,21 +25,17 @@
     "deploy:setup": "bun run scripts/deploy-setup.ts",
     "build": "cd shared && bun run build && cd ../client && bun run build",
     "deploy": "cd server && bun run deploy && cd ../client && bun run deploy",
+    "typecheck": "cd shared && bun run typecheck && cd ../server && bun run typecheck && cd ../client && bun run typecheck",
     "postinstall": "cd shared && bun run build",
     "lint": "oxlint --ignore-path .gitignore .",
     "format": "oxfmt --ignore-path .gitignore .",
     "format:check": "oxfmt --ignore-path .gitignore --check ."
   },
-  "dependencies": {
-    "@cloudflare/workers-types": "^4.20260317.1",
-    "@hono/zod-validator": "^0.7.6",
-    "better-auth": "^1.5.5",
-    "zod": "^4.3.6"
-  },
   "devDependencies": {
-    "bun-types": "latest"
-  },
-  "peerDependencies": {
-    "typescript": "^5.9.3"
+    "@types/bun": "^1.4.0",
+    "oxfmt": "^0.64.0",
+    "oxlint": "^1.79.0",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.125.0"
   }
 }

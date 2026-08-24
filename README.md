@@ -1,6 +1,6 @@
 # Hono Mono
 
-A TypeScript monorepo framework for building a full-stack app with Hono. 
+A TypeScript monorepo framework for building a full-stack app with Hono.
 
 ## Yeah, but what is it?
 
@@ -12,7 +12,7 @@ A TypeScript monorepo framework for building a full-stack app with Hono.
 
 ## Show me a demo
 
-https://hono-mono.seanockert.com — create an account and log in.
+https://hono-mono.seanockert.com - create an account and log in.
 
 Backend API: https://hono-mono.seanockert.workers.dev
 
@@ -29,12 +29,12 @@ bun run dev
 
 ## Architecture
 
-| Layer | Tech | Deployment |
-|-------|------|------------|
-| Frontend | Vue 3 + Vite | Cloudflare Pages |
-| Backend | Hono | Cloudflare Workers (D1) or Bun (SQLite) |
-| Shared | TypeScript types | — |
-| Auth | Better Auth | — |
+| Layer    | Tech             | Deployment                              |
+| -------- | ---------------- | --------------------------------------- |
+| Frontend | Vue 3 + Vite     | Cloudflare Pages                        |
+| Backend  | Hono             | Cloudflare Workers (D1) or Bun (SQLite) |
+| Shared   | TypeScript types | -                                       |
+| Auth     | Better Auth      | -                                       |
 
 ## Deployment
 
@@ -61,19 +61,19 @@ Automatically adds the DB table, mounts the route, re-exports types, creates Vue
 
 `bun run setup` creates env files for local development. For production, set these in `server/wrangler.toml` or via Wrangler secrets:
 
-| Variable | Description |
-|----------|-------------|
-| `BETTER_AUTH_SECRET` | Secret key for auth |
-| `BETTER_AUTH_URL` | Your Workers API URL |
-| `CLIENT_URLS` | Your Pages frontend URL (for CORS) |
+| Variable             | Description                        |
+| -------------------- | ---------------------------------- |
+| `BETTER_AUTH_SECRET` | Secret key for auth                |
+| `BETTER_AUTH_URL`    | Your Workers API URL               |
+| `CLIENT_URLS`        | Your Pages frontend URL (for CORS) |
 
 Client production settings are in `client/.env.production` (committed).
 
 ## Auth
 
 - We've set an additional field `role` on the auth table (server/src/lib/auth.ts). This defaults to "user" but if you change this to "admin" then that admin user can view and edit all other users from the dashboard.
-- Better Auth's default scrypt exceeds the Workers 10ms time limit on free plan so we switched to PBKDF2 with 100K iterations. This is still secure but on the lower end of OWASP recommendations so review this if shipping a production app. 
- 
+- Better Auth's default scrypt exceeds the Workers 10ms time limit on free plan so we switched to PBKDF2 with 100K iterations. This is still secure but on the lower end of OWASP recommendations so review this if shipping a production app.
+
 ## Todo
 
 - Add OAuth login eg. Google

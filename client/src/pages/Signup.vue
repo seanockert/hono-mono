@@ -59,7 +59,7 @@ const name = ref('');
 const errorMessage = ref('');
 const isSigningUp = ref(false);
 
-// Clear error when user starts typing
+// Clear the error when the user types
 watch([email, password, name], () => {
   if (errorMessage.value) {
     errorMessage.value = '';

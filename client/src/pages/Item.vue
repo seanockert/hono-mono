@@ -8,10 +8,22 @@
     <div v-if="isLoading">Loading...</div>
     <div v-else-if="error" class="error-message">{{ error }}</div>
     <ul v-else-if="item" class="stack-half">
-      <li><div>Slug:</div> {{ item.slug }}</li>
-      <li><div>Status:</div> {{ item.status }}</li>
-      <li><div>Created:</div> {{ new Date(item.createdAt).toLocaleString() }}</li>
-      <li><div>Updated:</div> {{ new Date(item.updatedAt).toLocaleString() }}</li>
+      <li>
+        <div>Slug:</div>
+        {{ item.slug }}
+      </li>
+      <li>
+        <div>Status:</div>
+        {{ item.status }}
+      </li>
+      <li>
+        <div>Created:</div>
+        {{ new Date(item.createdAt).toLocaleString() }}
+      </li>
+      <li>
+        <div>Updated:</div>
+        {{ new Date(item.updatedAt).toLocaleString() }}
+      </li>
       <li v-if="item.content">
         <p>{{ item.content }}</p>
       </li>
