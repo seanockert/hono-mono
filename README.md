@@ -16,6 +16,11 @@ https://hono-mono.seanockert.com - create an account and log in.
 
 Backend API: https://hono-mono.seanockert.workers.dev
 
+The demo app starts with a perfect lighthouse score:
+
+<img width="431" height="141" alt="lighthouse-score" src="https://github.com/user-attachments/assets/1998eb85-b47f-4e35-9e43-358cf75cd129" />
+
+
 ## Getting Started
 
 ```bash
