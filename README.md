@@ -50,12 +50,37 @@ bun run deploy
 You can quickly scaffold a new CRUD model (routes, migration, shared types, Vue composable) with:
 
 ```bash
-bun run generate <modelName> [pluralName]
+bun run generate <modelName> [pluralName] [--force]
 # e.g. bun run generate product
 # e.g. bun run generate category categories
 ```
 
-Automatically adds the DB table, mounts the route, re-exports types, creates Vue pages and routes, and runs the migration. The generated route includes paginated list, get by id/slug, create, update, and delete.
+Automatically adds the DB table, mounts the route, re-exports types, creates Vue pages and routes, and runs the migration.
+Use `--force` to overwrite files from an earlier run.
+The model name must be letters and digits, and the plural must differ from the singular.
+
+### How a model works
+
+The routes come from one factory, `createCrudRoutes` in `server/src/lib/crud.ts`, so a route file is only:
+
+```ts
+import { createCrudRoutes } from '../lib/crud';
+
+export default createCrudRoutes('product');
+```
+
+It gives you a paginated list, get by id or slug, create, update, and delete.
+The client side works the same way through `createResource` in `client/src/lib/resource.ts`.
+
+To add your own endpoints, register them before the CRUD routes.
+Hono matches routes in order, so `GET /:idOrSlug` will shadow anything added after it:
+
+```ts
+const products = new Hono();
+products.get('/featured', handler);
+products.route('/', createCrudRoutes('product'));
+export default products;
+```
 
 ## Environment Variables
 
@@ -67,12 +92,16 @@ Automatically adds the DB table, mounts the route, re-exports types, creates Vue
 | `BETTER_AUTH_URL`    | Your Workers API URL               |
 | `CLIENT_URLS`        | Your Pages frontend URL (for CORS) |
 
-Client production settings are in `client/.env.production` (committed).
+`bun run deploy:setup` writes `client/.env.production` with your Workers URL.
+This file is not committed, so run `deploy:setup` before you deploy from a new clone.
+Without it the production build points at `http://localhost:3000`.
 
 ## Auth
 
 - We've set an additional field `role` on the auth table (server/src/lib/auth.ts). This defaults to "user" but if you change this to "admin" then that admin user can view and edit all other users from the dashboard.
 - Better Auth's default scrypt exceeds the Workers 10ms time limit on free plan so we switched to PBKDF2 with 100K iterations. This is still secure but on the lower end of OWASP recommendations so review this if shipping a production app.
+- Reads are public. Create needs a session. Update and delete need the caller to be the author, or an admin.
+  Change this in `restrict()` in `server/src/lib/crud.ts`.
 
 ## Todo
 
