@@ -4,12 +4,12 @@ import { Kysely } from 'kysely';
 import { D1Dialect } from 'kysely-d1';
 import type { AppEnv } from '../index';
 
-// better-auth's default (scrypt) exceeds Workers' CPU time limit causing 503 on sign-up.
-// PBKDF2 via Web Crypto API works in both Cloudflare Workers and Bun.
+// scrypt, better-auth's default, exceeds the Workers CPU limit and gives 503 on sign-up.
+// PBKDF2 from Web Crypto works in Workers and Bun.
 const toB64 = (buf: Uint8Array) => btoa(Array.from(buf, (c) => String.fromCharCode(c)).join(''));
 const fromB64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 
-async function pbkdf2Key(password: string, salt: Uint8Array, iterations: number) {
+async function pbkdf2Key(password: string, salt: Uint8Array<ArrayBuffer>, iterations: number) {
   const key = await crypto.subtle.importKey(
     'raw',
     new TextEncoder().encode(password),
@@ -31,15 +31,24 @@ async function hashPassword(password: string): Promise<string> {
   return `pbkdf2:sha256:100000:${toB64(salt)}:${toB64(hash)}`;
 }
 
-async function verifyPassword({ hash, password }: { hash: string; password: string }): Promise<boolean> {
+async function verifyPassword({
+  hash,
+  password,
+}: {
+  hash: string;
+  password: string;
+}): Promise<boolean> {
   const parts = hash.split(':');
   if (parts.length !== 5 || parts[0] !== 'pbkdf2') return false;
   const [, , iterStr, saltB64, hashB64] = parts;
+  if (!iterStr || !saltB64 || !hashB64) return false;
   const expected = fromB64(hashB64);
   const derived = await pbkdf2Key(password, fromB64(saltB64), parseInt(iterStr));
   if (derived.length !== expected.length) return false;
   let diff = 0;
-  for (let i = 0; i < derived.length; i++) diff |= derived[i] ^ expected[i];
+  // `?? 0` never runs: the lengths are equal. It satisfies noUncheckedIndexedAccess
+  // without an early exit, which would leak timing.
+  for (let i = 0; i < derived.length; i++) diff |= (derived[i] ?? 0) ^ (expected[i] ?? 0);
   return diff === 0;
 }
 
@@ -59,20 +68,19 @@ export const authConfig = {
 };
 
 export const parseUrlList = (urls?: string): string[] =>
-  urls ? urls.split(',').map((u) => u.trim()).filter(Boolean) : [];
+  urls
+    ? urls
+        .split(',')
+        .map((u) => u.trim())
+        .filter(Boolean)
+    : [];
 
-// Cache auth instance per Worker isolate — re-creating betterAuth() per request is expensive
-// (re-initialises Kysely/D1 connection and all plugins on every request).
-let _auth: ReturnType<typeof betterAuth> | null = null;
-let _authKey: string | null = null;
-
-export const createAuth = (env: AppEnv) => {
+const createAuthInstance = (env: AppEnv) => {
   if (!env.BETTER_AUTH_SECRET || !env.BETTER_AUTH_URL) {
-    throw new Error('Missing required environment variables: BETTER_AUTH_URL and BETTER_AUTH_SECRET');
+    throw new Error(
+      'Missing required environment variables: BETTER_AUTH_URL and BETTER_AUTH_SECRET',
+    );
   }
-
-  const envKey = `${env.BETTER_AUTH_URL}:${env.BETTER_AUTH_SECRET}`;
-  if (_auth && _authKey === envKey) return _auth;
 
   const trustedOrigins = [env.BETTER_AUTH_URL, ...parseUrlList(env.CLIENT_URLS)];
 
@@ -100,19 +108,32 @@ export const createAuth = (env: AppEnv) => {
       }),
     });
 
-    _auth = betterAuth({
+    return betterAuth({
       ...baseConfig,
       database: { db, type: 'sqlite' },
       advanced: {
         defaultCookieAttributes: { sameSite: 'none', secure: true, httpOnly: true },
       },
     });
-  } else {
-    // Bun SQLite (local dev or Bun deployment)
-    const { Database } = require('bun:sqlite');
-    _auth = betterAuth({ ...baseConfig, database: new Database('src/honomono.db') });
   }
 
+  // Bun SQLite (local dev or Bun deployment)
+  const { Database } = require('bun:sqlite');
+  return betterAuth({ ...baseConfig, database: new Database('src/honomono.db') });
+};
+
+// One auth instance per Worker isolate. betterAuth() is expensive: it re-initialises
+// the Kysely/D1 connection and all plugins.
+// The type comes from createAuthInstance, not betterAuth: betterAuth is generic and
+// Auth<O> is invariant in O, so the constraint instantiation is not assignable.
+let _auth: ReturnType<typeof createAuthInstance> | null = null;
+let _authKey: string | null = null;
+
+export const createAuth = (env: AppEnv) => {
+  const envKey = `${env.BETTER_AUTH_URL}:${env.BETTER_AUTH_SECRET}`;
+  if (_auth && _authKey === envKey) return _auth;
+
+  _auth = createAuthInstance(env);
   _authKey = envKey;
   return _auth;
 };
