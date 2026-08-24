@@ -1,4 +1,13 @@
-import { ref, onMounted, watch, toValue, type MaybeRefOrGetter, type Ref } from 'vue';
+import {
+  ref,
+  computed,
+  onMounted,
+  onScopeDispose,
+  watch,
+  toValue,
+  type MaybeRefOrGetter,
+  type Ref,
+} from 'vue';
 import type { PaginatedResponse } from 'shared';
 import { SERVER_URL, authHeaders } from './config';
 
@@ -26,6 +35,44 @@ const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
   return res.status === 204 ? (undefined as T) : res.json();
 };
 
+const useDelayedFlag = (source: Ref<boolean>, delay = 150, minDuration = 300) => {
+  const visible = ref(false);
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let shownAt = 0;
+
+  const clear = () => {
+    if (timer !== undefined) clearTimeout(timer);
+    timer = undefined;
+  };
+
+  watch(source, (active) => {
+    clear();
+
+    if (active) {
+      // Already visible from an earlier cycle whose hide was still pending.
+      if (visible.value) return;
+      timer = setTimeout(() => {
+        visible.value = true;
+        shownAt = Date.now();
+      }, delay);
+      return;
+    }
+
+    if (!visible.value) return;
+    const remaining = minDuration - (Date.now() - shownAt);
+    if (remaining <= 0) {
+      visible.value = false;
+      return;
+    }
+    timer = setTimeout(() => {
+      visible.value = false;
+    }, remaining);
+  });
+
+  onScopeDispose(clear);
+  return visible;
+};
+
 /**
  * Builds the list and detail composables for a CRUD resource.
  * `path` is the API segment ("items"), `label` names it in errors ("Item").
@@ -45,8 +92,10 @@ export const createResource = <T extends Row, P extends ListParams = ListParams>
     const rows = ref<T[]>([]) as Ref<T[]>;
     const total = ref(0);
     const isLoading = ref(false);
+    const hasLoaded = ref(false);
     const error = ref('');
     const params = ref<P>({ page: 1, limit: 20 } as unknown as P);
+    const showLoading = useDelayedFlag(computed(() => isLoading.value && !hasLoaded.value));
 
     const fetchAll = async () => {
       isLoading.value = true;
@@ -63,6 +112,7 @@ export const createResource = <T extends Row, P extends ListParams = ListParams>
         error.value = describe(err, 'fetch');
       } finally {
         isLoading.value = false;
+        hasLoaded.value = true;
       }
     };
 
@@ -79,6 +129,8 @@ export const createResource = <T extends Row, P extends ListParams = ListParams>
       rows,
       total,
       isLoading,
+      showLoading,
+      hasLoaded,
       error,
       params,
       fetchAll,

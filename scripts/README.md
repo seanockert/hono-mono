@@ -28,5 +28,9 @@ The route and composable templates are thin because the logic lives in `server/s
 
 ## Migrations
 
-`nextMigrationNumber` reads `server/migrations/` and returns the next zero-padded prefix, for example `0004`.
+`nextMigrationNumber` reads `server/migrations/` and returns the next zero-padded prefix, for example `0001`.
 This matches how Wrangler numbers and orders D1 migrations.
+
+The schema starts as one file, `0000_initial.sql`.
+Do not edit it after you apply it: both runners record a migration by file name and never re-read it.
+Add a new numbered file instead.
