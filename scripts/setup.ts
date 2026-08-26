@@ -92,6 +92,7 @@ if (modelArg && modelArg.toLowerCase() !== 'item') {
       transform('server/migrations/0000_initial.sql'),
       transform('server/src/routes/items.ts', `server/src/routes/${models}.ts`),
       transform('server/src/lib/db.ts'),
+      transform('server/src/lib/models.ts'),
       transform('server/src/index.ts'),
       transform('shared/src/types/item.ts', `shared/src/types/${model}.ts`),
       transform('shared/src/types/index.ts'),

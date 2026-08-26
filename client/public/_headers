@@ -1,0 +1,13 @@
+# Response headers for Cloudflare Pages. Copied to dist/ by the build.
+# https://developers.cloudflare.com/pages/configuration/headers/
+
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; manifest-src 'self'; connect-src 'self' https:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'
+  Strict-Transport-Security: max-age=15552000; includeSubDomains
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+
+# connect-src allows any HTTPS origin because the API URL differs per deployment.
+# Pin it to your own once you know it:
+#   connect-src 'self' https://your-app.your-name.workers.dev

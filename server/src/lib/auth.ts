@@ -3,6 +3,7 @@ import { admin, bearer } from 'better-auth/plugins';
 import { Kysely } from 'kysely';
 import { D1Dialect } from 'kysely-d1';
 import { dbPath } from './db';
+import { sendEmail } from './email';
 import type { AppEnv } from './env';
 
 // scrypt, better-auth's default, exceeds the Workers CPU limit and gives 503 on sign-up.
@@ -56,6 +57,20 @@ async function verifyPassword({
 export const authConfig = {
   emailAndPassword: { enabled: true, password: { hash: hashPassword, verify: verifyPassword } },
   plugins: [admin(), bearer()],
+  // Database-backed: each Workers isolate has its own memory, so an in-memory
+  // counter would barely hold. The cost is one D1 write per limited request.
+  rateLimit: {
+    enabled: true,
+    storage: 'database' as const,
+    window: 60,
+    max: 100,
+    customRules: {
+      '/sign-in/email': { window: 60, max: 5 },
+      '/sign-up/email': { window: 300, max: 5 },
+      // Not "/forget-password", which matches no endpoint in 1.7.
+      '/request-password-reset': { window: 300, max: 3 },
+    },
+  },
   // Reads the session from a signed cookie instead of the database. Saves one D1
   // round trip on every getSession call. Falls back to the database when the cookie
   // is absent, which is the case in browsers that block third-party cookies.
@@ -99,6 +114,26 @@ const createAuthInstance = (env: AppEnv) => {
 
   const baseConfig = {
     ...authConfig,
+    // Here rather than in authConfig because it needs `env`, and authConfig has
+    // to stay a plain const for auth.cli.ts to import.
+    emailAndPassword: {
+      ...authConfig.emailAndPassword,
+      sendResetPassword: ({ user, url }: { user: { email: string }; url: string }) =>
+        sendEmail(env, {
+          to: user.email,
+          subject: 'Reset your password',
+          text: `Open this link to choose a new password:\n\n${url}\n\nThe link expires in one hour. If you did not ask for a reset, ignore this email.`,
+        }),
+    },
+    // Unused until emailAndPassword.requireEmailVerification is set.
+    emailVerification: {
+      sendVerificationEmail: ({ user, url }: { user: { email: string }; url: string }) =>
+        sendEmail(env, {
+          to: user.email,
+          subject: 'Verify your email address',
+          text: `Open this link to verify your email address:\n\n${url}`,
+        }),
+    },
     socialProviders,
     baseURL: env.BETTER_AUTH_URL,
     secret: env.BETTER_AUTH_SECRET,
@@ -118,6 +153,11 @@ const createAuthInstance = (env: AppEnv) => {
       database: { db, type: 'sqlite' },
       advanced: {
         defaultCookieAttributes: { sameSite: 'none', secure: true, httpOnly: true },
+        // Cloudflare overwrites this header, so it can be trusted. Without it
+        // every caller shares one rate-limit bucket and a single attacker can
+        // lock everybody out. Deliberately not set on the Bun path below, where
+        // the header is forgeable.
+        ipAddress: { ipAddressHeaders: ['cf-connecting-ip'] },
       },
     });
   }
