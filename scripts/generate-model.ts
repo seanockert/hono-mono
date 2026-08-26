@@ -126,6 +126,14 @@ patch(
 );
 
 patch(
+  'server/src/lib/models.ts',
+  `'${model}'`,
+  'export const ADMIN_MODELS = [',
+  `export const ADMIN_MODELS = ['${model}',`,
+  `${model} in ADMIN_MODELS`,
+);
+
+patch(
   'server/src/index.ts',
   `from './routes/${models}'`,
   "import type { User } from 'shared';",

@@ -1,5 +1,5 @@
 import { createAuthClient } from 'better-auth/vue';
-import { adminClient, inferAdditionalFields } from 'better-auth/client/plugins';
+import { inferAdditionalFields } from 'better-auth/client/plugins';
 import { TOKEN_KEY, SERVER_URL } from './config';
 
 export const clearStoredToken = () => localStorage.removeItem(TOKEN_KEY);
@@ -21,7 +21,6 @@ export const authClient = createAuthClient({
     },
   },
   plugins: [
-    adminClient(),
     inferAdditionalFields({
       user: {
         role: {

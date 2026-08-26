@@ -25,7 +25,11 @@
         {{ isLoggingIn ? 'Logging in...' : 'Login' }}
       </button>
 
-      <div class="inline-quarter">or <RouterLink :to="{ name: 'signup' }">sign up</RouterLink></div>
+      <div class="inline-quarter">
+        or <RouterLink :to="{ name: 'signup' }">sign up</RouterLink>
+        &middot;
+        <RouterLink :to="{ name: 'forgot-password' }">forgot password?</RouterLink>
+      </div>
       <!-- <button @click="handleGithubLogin">Login with GitHub</button> -->
     </form>
 

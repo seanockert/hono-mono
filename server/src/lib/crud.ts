@@ -16,7 +16,7 @@ export type CrudTableName = {
 // Every CRUD table has the same columns, so queries are built against a
 // single-table view of the database instead of each concrete table type.
 type CrudSchema = Record<string, CrudTable>;
-type CrudDb = Kysely<CrudSchema>;
+export type CrudDb = Kysely<CrudSchema>;
 
 /** A query builder that can be narrowed by column, e.g. update or delete. */
 type Restrictable<T> = { where(column: 'id' | 'authorId', op: '=', value: string): T };
@@ -46,7 +46,7 @@ const updateSchema = z.object({
 });
 
 /** Finds a free slug for `title` in one query. */
-const uniqueSlug = async (db: CrudDb, table: string, title: string, excludeId?: string) => {
+export const uniqueSlug = async (db: CrudDb, table: string, title: string, excludeId?: string) => {
   const base = slugify(title);
   let query = db.selectFrom(table).select('slug').where('slug', 'like', `${base}%`);
   if (excludeId) query = query.where('id', '!=', excludeId);
