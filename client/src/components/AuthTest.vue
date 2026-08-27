@@ -13,7 +13,6 @@
 import { ref } from 'vue';
 import { authHeaders } from '../lib/config';
 
-// API testing state
 const isTesting = ref(false);
 const apiTestResult = ref('');
 

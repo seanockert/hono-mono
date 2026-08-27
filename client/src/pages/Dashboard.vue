@@ -39,8 +39,6 @@
     </div>
 
     <AuthTest />
-
-    <UserList v-if="session?.user.role === 'admin'" />
   </div>
 </template>
 
@@ -50,7 +48,6 @@ import { computed, ref } from 'vue';
 import { RouterLink } from 'vue-router';
 import AuthTest from '../components/AuthTest.vue';
 import Logo from '../components/Logo.vue';
-import UserList from '../components/UserList.vue';
 
 const sessionData = authClient.useSession();
 const session = computed(() => sessionData.value.data);
@@ -93,6 +90,6 @@ const handleUpdateName = async (e: Event) => {
 const handleSignOut = async () => {
   clearStoredToken();
   await authClient.signOut();
-  // The App.vue watchEffect navigates to login
+  // No router.push here: the App.vue watchEffect navigates on session change.
 };
 </script>

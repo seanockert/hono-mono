@@ -23,7 +23,6 @@ const spawned = cmds.map((cmd) =>
   }),
 );
 
-// Wait for the client dev server to accept connections
 async function waitForUrl(url: string, intervalMs = 250, timeoutMs = 30_000) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
@@ -45,10 +44,8 @@ console.log(`
   ✓ client   → http://localhost:5173
 `);
 
-// Open client in default browser
 if (ready) Bun.spawn(['open', 'http://localhost:5173']);
 
-// Keep alive until Ctrl+C
 process.on('SIGINT', () => {
   for (const p of spawned) p.kill();
   process.exit();

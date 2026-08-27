@@ -3,8 +3,10 @@ export type AppEnv = {
   BETTER_AUTH_URL?: string;
   CLIENT_URLS?: string;
   DATABASE?: unknown;
+  EMAIL_FROM?: string;
   GITHUB_CLIENT_ID?: string;
   GITHUB_CLIENT_SECRET?: string;
+  RESEND_API_KEY?: string;
 };
 
 const ENV_KEYS = [
@@ -12,11 +14,13 @@ const ENV_KEYS = [
   'BETTER_AUTH_URL',
   'CLIENT_URLS',
   'DATABASE',
+  'EMAIL_FROM',
   'GITHUB_CLIENT_ID',
   'GITHUB_CLIENT_SECRET',
+  'RESEND_API_KEY',
 ];
 
-/** Merge Cloudflare bindings (c.env) with process.env for Bun/Node */
+/** Merges Cloudflare bindings (c.env) with process.env for Bun/Node. */
 export const getEnv = (bindings: AppEnv): AppEnv =>
   Object.fromEntries(
     Object.keys(bindings).length > 0

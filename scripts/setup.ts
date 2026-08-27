@@ -74,7 +74,6 @@ if (modelArg && modelArg.toLowerCase() !== 'item') {
         .replace(/(?<![A-Za-z0-9])item(?![A-Za-z0-9])/g, model)
         .replaceAll(HELD, 'Item');
 
-    /** Rewrites a file, optionally renaming it. Returns the path written. */
     const transform = (from: string, to = from) => {
       const source = join(root, from);
       if (!existsSync(source)) return null;
@@ -88,10 +87,11 @@ if (modelArg && modelArg.toLowerCase() !== 'item') {
     };
 
     const written = [
-      // The schema is one file, so it is rewritten in place, not renamed.
+      // One schema file, so it is rewritten in place rather than renamed.
       transform('server/migrations/0000_initial.sql'),
       transform('server/src/routes/items.ts', `server/src/routes/${models}.ts`),
       transform('server/src/lib/db.ts'),
+      transform('server/src/lib/models.ts'),
       transform('server/src/index.ts'),
       transform('shared/src/types/item.ts', `shared/src/types/${model}.ts`),
       transform('shared/src/types/index.ts'),

@@ -3,6 +3,8 @@
   "compilerOptions": {
     "outDir": "./dist",
     "types": ["bun"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "hono/jsx",
     "paths": {
       "@server/*": ["./src/*"],
       "@client/*": ["../client/src/*"],
