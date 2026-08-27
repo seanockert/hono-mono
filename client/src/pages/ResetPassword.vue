@@ -59,8 +59,7 @@ import { getErrorMessage } from '../lib/auth-errors';
 
 const route = useRoute();
 
-// Better Auth redirects here with ?token= on success, or ?error= when the link
-// is expired or already used.
+// Better Auth redirects here with ?token=, or ?error= if the link is dead.
 const token = route.query.error ? '' : ((route.query.token as string) ?? '');
 
 const password = ref('');

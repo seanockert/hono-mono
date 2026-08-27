@@ -2,7 +2,6 @@
   <section class="stack">
     <h1>Sign Up</h1>
     <form @submit="handleSubmit" class="stack">
-      <!-- Error Message Display -->
       <div v-if="errorMessage" class="error-message">
         {{ errorMessage }}
       </div>
@@ -59,7 +58,6 @@ const name = ref('');
 const errorMessage = ref('');
 const isSigningUp = ref(false);
 
-// Clear the error when the user types
 watch([email, password, name], () => {
   if (errorMessage.value) {
     errorMessage.value = '';

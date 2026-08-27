@@ -3,8 +3,7 @@ import { join } from 'node:path';
 
 export const root = join(import.meta.dir, '..');
 
-// Locals used by the generated route and page templates. A model with one of
-// these names would shadow them.
+// Locals in the generated templates. A model with one of these names shadows them.
 const RESERVED = new Set([
   'const',
   'class',
@@ -43,10 +42,8 @@ const RESERVED = new Set([
 export type ModelNames = ReturnType<typeof resolveModel>;
 
 /**
- * Resolves model name variants from a raw input.
- * e.g. "category", "categories" -> { model: "category", Model: "Category",
- * models: "categories", Models: "Categories", defaultPlural: "categories" }
- * Exits with an error if the name cannot make valid identifiers.
+ * "category" -> { model: "category", Model: "Category", models: "categories",
+ * Models: "Categories" }. Exits if the name cannot make a valid identifier.
  */
 export function resolveModel(name: string, plural?: string) {
   const model = name.trim().toLowerCase();
@@ -76,7 +73,7 @@ export function resolveModel(name: string, plural?: string) {
   return { model, Model: capitalise(model), models, Models: capitalise(models), defaultPlural };
 }
 
-/** Next zero-padded migration prefix, matching wrangler's numbering. */
+/** Zero-padded to match wrangler's numbering. */
 export function nextMigrationNumber(): string {
   const files = readdirSync(join(root, 'server/migrations')).filter((f) => f.endsWith('.sql'));
   const highest = files.reduce((max, file) => {
@@ -94,19 +91,16 @@ const run = (cmd: string[], cwd: string, label: string) => {
   }
 };
 
-/** Runs `bun run migrate` in server/, exits with error on failure. */
 export function runMigrate() {
   console.log('  Running migration...');
   run(['bun', 'run', 'migrate'], join(root, 'server'), 'Migration');
 }
 
-/** Rebuilds shared/dist so the client and server see new or renamed types. */
 export function buildShared() {
   console.log('  Rebuilding shared types...');
   run(['bun', 'run', 'build'], join(root, 'shared'), 'Shared build');
 }
 
-/** Formats generated or rewritten files so they match project style. */
 export function formatFiles(paths: string[]) {
   if (paths.length === 0) return;
   const result = Bun.spawnSync(['bunx', 'oxfmt', ...paths], {

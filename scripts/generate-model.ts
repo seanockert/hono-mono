@@ -47,7 +47,7 @@ const template = (name: string) =>
 
 const rel = (path: string) => path.replace(`${root}/`, '');
 
-// A model keeps its original migration, so --force never adds a duplicate.
+// A model keeps its first migration, so --force never adds a duplicate.
 const existingMigration = readdirSync(join(root, 'server/migrations')).find((file) =>
   file.endsWith(`_create_${models}.sql`),
 );
@@ -84,10 +84,8 @@ for (const [name, path] of targets) {
   console.log(`  Created: ${path}`);
 }
 
-/**
- * Inserts `addition` into a file at `anchor`. Fails loudly rather than leaving
- * a half-wired model behind, and does nothing if `marker` is already present.
- */
+// Inserts at `anchor`. Exits loudly rather than half-wiring a model. Skips if
+// `marker` is already present.
 const touched = new Set(targets.map(([, path]) => path));
 
 const patch = (path: string, marker: string, anchor: string, addition: string, note: string) => {

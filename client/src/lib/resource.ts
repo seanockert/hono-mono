@@ -73,10 +73,7 @@ const useDelayedFlag = (source: Ref<boolean>, delay = 150, minDuration = 300) =>
   return visible;
 };
 
-/**
- * Builds the list and detail composables for a CRUD resource.
- * `path` is the API segment ("items"), `label` names it in errors ("Item").
- */
+/** `path` is the API segment ("items"), `label` names it in errors ("Item"). */
 export const createResource = <T extends Row, P extends ListParams = ListParams>(
   path: string,
   label: string,

@@ -7,18 +7,16 @@ import { requireAuth, type AuthVariables } from './middleware';
 import { getEnv, type AppEnv } from './env';
 import { slugify, UUID_REGEX } from './utils';
 
-/** Table names in AppDatabase that use the standard CRUD shape. */
 export type CrudTableName = {
   [K in keyof AppDatabase]: AppDatabase[K] extends CrudTable ? K : never;
 }[keyof AppDatabase] &
   string;
 
-// Every CRUD table has the same columns, so queries are built against a
-// single-table view of the database instead of each concrete table type.
+// Every CRUD table has the same columns, so queries build against one shared
+// table type instead of each concrete one.
 type CrudSchema = Record<string, CrudTable>;
 export type CrudDb = Kysely<CrudSchema>;
 
-/** A query builder that can be narrowed by column, e.g. update or delete. */
 type Restrictable<T> = { where(column: 'id' | 'authorId', op: '=', value: string): T };
 
 const STATUS = ['draft', 'published', 'archived'] as const;
@@ -45,7 +43,6 @@ const updateSchema = z.object({
   status: z.enum(STATUS).optional(),
 });
 
-/** Finds a free slug for `title` in one query. */
 export const uniqueSlug = async (db: CrudDb, table: string, title: string, excludeId?: string) => {
   const base = slugify(title);
   let query = db.selectFrom(table).select('slug').where('slug', 'like', `${base}%`);
@@ -59,7 +56,7 @@ export const uniqueSlug = async (db: CrudDb, table: string, title: string, exclu
   return `${base}-${n}`;
 };
 
-/** Limits a write to one row that the caller may change. Admins may change any. */
+/** Narrows a write to rows the caller owns. Admins keep all rows. */
 const restrict = <T extends Restrictable<T>>(
   query: T,
   id: string,
@@ -69,7 +66,7 @@ const restrict = <T extends Restrictable<T>>(
   return user.role === 'admin' ? byId : byId.where('authorId', '=', user.id);
 };
 
-/** Tells a missing row from one the caller may not change. */
+/** 404 if the row is missing, 403 if it exists but is not the caller's. */
 const refuse = async (db: CrudDb, table: string, id: string) => {
   const found = await db.selectFrom(table).select('id').where('id', '=', id).executeTakeFirst();
   return found
@@ -77,14 +74,8 @@ const refuse = async (db: CrudDb, table: string, id: string) => {
     : ({ error: 'Not found', status: 404 } as const);
 };
 
-/**
- * Builds the standard CRUD routes for a table: paginated list, get by id or
- * slug, create, update, delete. Writes need a session. Update and delete also
- * need the caller to be the author or an admin.
- *
- * Hono matches routes in registration order, so register custom routes before
- * mounting these or `GET /:idOrSlug` will shadow them.
- */
+// Hono matches in registration order: register custom routes before mounting
+// these, or `GET /:idOrSlug` shadows them.
 export const createCrudRoutes = (table: CrudTableName) => {
   const routes = new Hono<{ Bindings: AppEnv; Variables: AuthVariables }>();
   const getDb = (env: AppEnv) => createDb(env) as unknown as CrudDb;
