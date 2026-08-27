@@ -53,7 +53,6 @@ const password = ref('');
 const errorMessage = ref('');
 const isLoggingIn = ref(false);
 
-// Clear the error when the user types
 watch([email, password], () => {
   if (errorMessage.value) {
     errorMessage.value = '';
@@ -73,7 +72,7 @@ const handleLogin = async () => {
     if (result.error) {
       handleAuthError(result.error);
     }
-    // The App.vue watchEffect navigates after login
+    // No router.push here: the App.vue watchEffect navigates on session change.
   } catch (error: any) {
     handleAuthError(error);
   } finally {

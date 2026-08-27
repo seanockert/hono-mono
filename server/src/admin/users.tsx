@@ -14,11 +14,8 @@ const auth = (c: Context<Env>) => createAuth(getEnv(c.env));
 const backWithError = (c: Context<Env>, message: string) =>
   c.redirect(`/admin/users?error=${encodeURIComponent(message)}`, 303);
 
-/**
- * Runs one Better Auth admin call on the `:id` user and returns to the list.
- * The caller is never a valid target: Better Auth permits it and the list only
- * hides the controls, so without this an admin could delete their own account.
- */
+// Refuses the caller as a target: Better Auth allows it and the list only hides
+// the controls, so without this an admin could delete their own account.
 const act = async (c: Context<Env>, run: (userId: string) => Promise<unknown>) => {
   const userId = c.req.param('id') ?? '';
   if (userId === c.get('session').user.id) {

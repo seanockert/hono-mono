@@ -20,7 +20,7 @@ const ENV_KEYS = [
   'RESEND_API_KEY',
 ];
 
-/** Merge Cloudflare bindings (c.env) with process.env for Bun/Node */
+/** Merges Cloudflare bindings (c.env) with process.env for Bun/Node. */
 export const getEnv = (bindings: AppEnv): AppEnv =>
   Object.fromEntries(
     Object.keys(bindings).length > 0

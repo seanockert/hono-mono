@@ -33,7 +33,7 @@ if (!email) {
 
 const role = revoke ? 'user' : 'admin';
 
-/** readRole: `undefined` for no such user, `null` for a user with no role. */
+/** readRole: `undefined` = no such user, `null` = user with no role set. */
 type Driver = {
   readRole: () => string | null | undefined;
   writeRole: (role: string) => void;

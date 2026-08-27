@@ -53,7 +53,7 @@ const handleSubmit = async () => {
   isSending.value = true;
 
   try {
-    // Resolved against the API origin, so this has to be absolute.
+    // Resolved against the API origin, so it has to be absolute.
     const result = await authClient.requestPasswordReset({
       email: email.value,
       redirectTo: `${window.location.origin}/reset-password`,

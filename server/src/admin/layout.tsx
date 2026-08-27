@@ -3,7 +3,7 @@ import { html } from 'hono/html';
 import type { Child, FC } from 'hono/jsx';
 import { ADMIN_MODELS, modelLabel } from '../lib/models';
 
-// Inline, so the admin needs no build step and no shared asset.
+// Inline: no build step, no asset shared with the client.
 const STYLES = `
 :root {
   color-scheme: light dark;
@@ -73,7 +73,7 @@ button.danger { color: var(--danger); }
 type LayoutProps = {
   c: Context;
   title: string;
-  /** Absent on the login and forbidden pages, which show no nav. */
+  /** Absent on login and forbidden, which show no nav. */
   email?: string;
   children?: Child;
 };
@@ -110,7 +110,7 @@ const Shell: FC<LayoutProps> = ({ c, title, email, children }) => (
   </html>
 );
 
-// The doctype is prepended here because JSX cannot express it.
+// JSX cannot express the doctype, so it is prepended here.
 export const page = (c: Context, props: Omit<LayoutProps, 'c'>) =>
   c.html(html`<!doctype html>${<Shell c={c} {...props} />}`);
 

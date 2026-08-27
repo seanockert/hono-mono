@@ -6,8 +6,7 @@ import { dbPath } from './db';
 import { sendEmail } from './email';
 import type { AppEnv } from './env';
 
-// scrypt, better-auth's default, exceeds the Workers CPU limit and gives 503 on sign-up.
-// PBKDF2 from Web Crypto works in Workers and Bun.
+// scrypt, the better-auth default, exceeds the Workers CPU limit and 503s on sign-up.
 const toB64 = (buf: Uint8Array) => btoa(Array.from(buf, (c) => String.fromCharCode(c)).join(''));
 const fromB64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 
@@ -48,8 +47,7 @@ async function verifyPassword({
   const derived = await pbkdf2Key(password, fromB64(saltB64), parseInt(iterStr));
   if (derived.length !== expected.length) return false;
   let diff = 0;
-  // `?? 0` never runs: the lengths are equal. It satisfies noUncheckedIndexedAccess
-  // without an early exit, which would leak timing.
+  // No early exit on mismatch: that leaks timing. `?? 0` never runs.
   for (let i = 0; i < derived.length; i++) diff |= (derived[i] ?? 0) ^ (expected[i] ?? 0);
   return diff === 0;
 }
@@ -57,8 +55,7 @@ async function verifyPassword({
 export const authConfig = {
   emailAndPassword: { enabled: true, password: { hash: hashPassword, verify: verifyPassword } },
   plugins: [admin(), bearer()],
-  // Database-backed: each Workers isolate has its own memory, so an in-memory
-  // counter would barely hold. The cost is one D1 write per limited request.
+  // Database, not memory: each Workers isolate has its own memory.
   rateLimit: {
     enabled: true,
     storage: 'database' as const,
@@ -71,9 +68,7 @@ export const authConfig = {
       '/request-password-reset': { window: 300, max: 3 },
     },
   },
-  // Reads the session from a signed cookie instead of the database. Saves one D1
-  // round trip on every getSession call. Falls back to the database when the cookie
-  // is absent, which is the case in browsers that block third-party cookies.
+  // Saves a D1 round trip per getSession. Falls back to the db if the cookie is blocked.
   session: { cookieCache: { enabled: true, maxAge: 300 } },
   user: {
     additionalFields: {
@@ -114,8 +109,8 @@ const createAuthInstance = (env: AppEnv) => {
 
   const baseConfig = {
     ...authConfig,
-    // Here rather than in authConfig because it needs `env`, and authConfig has
-    // to stay a plain const for auth.cli.ts to import.
+    // Here, not in authConfig: needs `env`, and authConfig must stay a plain
+    // const for auth.cli.ts to import.
     emailAndPassword: {
       ...authConfig.emailAndPassword,
       sendResetPassword: ({ user, url }: { user: { email: string }; url: string }) =>
@@ -140,7 +135,6 @@ const createAuthInstance = (env: AppEnv) => {
     trustedOrigins,
   };
 
-  // Cloudflare D1
   if (env.DATABASE) {
     const db = new Kysely({
       dialect: new D1Dialect({
@@ -154,23 +148,19 @@ const createAuthInstance = (env: AppEnv) => {
       advanced: {
         defaultCookieAttributes: { sameSite: 'none', secure: true, httpOnly: true },
         // Cloudflare overwrites this header, so it can be trusted. Without it
-        // every caller shares one rate-limit bucket and a single attacker can
-        // lock everybody out. Deliberately not set on the Bun path below, where
-        // the header is forgeable.
+        // every caller shares one rate-limit bucket and one attacker locks out
+        // everybody. Not set on the Bun path, where the header is forgeable.
         ipAddress: { ipAddressHeaders: ['cf-connecting-ip'] },
       },
     });
   }
 
-  // Bun SQLite (local dev or Bun deployment)
   const { Database } = require('bun:sqlite');
   return betterAuth({ ...baseConfig, database: new Database(dbPath()) });
 };
 
-// One auth instance per Worker isolate. betterAuth() is expensive: it re-initialises
-// the Kysely/D1 connection and all plugins.
-// The type comes from createAuthInstance, not betterAuth: betterAuth is generic and
-// Auth<O> is invariant in O, so the constraint instantiation is not assignable.
+// One instance per isolate: betterAuth() re-inits the D1 connection and every plugin.
+// Typed from createAuthInstance, not betterAuth: Auth<O> is invariant in O.
 let _auth: ReturnType<typeof createAuthInstance> | null = null;
 let _authKey: string | null = null;
 

@@ -43,7 +43,6 @@ console.log('  ✓ Wrangler authenticated');
 
 let databaseId = '';
 
-// Check if database already exists
 const listResult = Bun.spawnSync(['bunx', 'wrangler', 'd1', 'list', '--json'], {
   stdout: 'pipe',
   stderr: 'pipe',
@@ -58,7 +57,7 @@ if (listResult.exitCode === 0) {
       console.log(`  ✓ D1 database "${dbName}" already exists (${databaseId})`);
     }
   } catch {
-    // Parse failed. Create the database below.
+    // Parse failed. Falls through to create it below.
   }
 }
 

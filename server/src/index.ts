@@ -35,8 +35,7 @@ app.use('*', async (c, next) => {
       credentials: true,
       allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowHeaders: ['Content-Type', 'Authorization'],
-      // If the client is on a different origin, every request is preflighted.
-      // Without this the browser repeats the preflight on each one.
+      // A cross-origin client preflights every request without this.
       maxAge: 86400,
     });
   }
@@ -72,7 +71,6 @@ app.onError(async (error, c) => {
 
 app.notFound((c) => fail(c, 404, 'Not found'));
 
-// Base route
 app.get('/', (c) => c.text('Hola!'));
 
 // The Worker can be healthy while D1 is not, so the database is reported too.
@@ -87,7 +85,6 @@ app.get('/health', async (c) => {
   return c.json({ ok: db, db }, db ? 200 : 503);
 });
 
-// Auth routes
 app.all('/api/auth/*', async (c) => {
   try {
     const auth = createAuth(getEnv(c.env));
@@ -98,7 +95,6 @@ app.all('/api/auth/*', async (c) => {
   }
 });
 
-// Protected endpoint example
 app.get('/api/protected', requireAuth, (c) =>
   c.json({
     message: 'Auth successful!',
@@ -107,7 +103,6 @@ app.get('/api/protected', requireAuth, (c) =>
   }),
 );
 
-// Items CRUD
 app.route('/api/items', items);
 
 // Same origin as the API, so the session cookie works with no CORS.

@@ -39,7 +39,7 @@ const loginPage = (c: Context<Env>, notice?: string) =>
     ),
   });
 
-/** Not `requireAuth`: that answers JSON 401, which is no use to a browser. */
+/** Not `requireAuth`: that answers JSON 401, no use to a browser. */
 const requireAdmin = createMiddleware<Env>(async (c, next) => {
   const session = await createAuth(getEnv(c.env)).api.getSession({ headers: c.req.raw.headers });
 
@@ -96,10 +96,9 @@ admin.use(
 admin.post('/login', async (c) => {
   const body = await c.req.parseBody();
 
-  // Through the handler rather than auth.api, because only the handler runs the
-  // rate limiter: a direct api call leaves this form open to password guessing.
-  // The original headers carry the client IP and Origin; the old content-length
-  // describes the form body, not the JSON one.
+  // Through the handler, not auth.api: only the handler rate limits, so a direct
+  // api call leaves this open to password guessing. Original headers carry the
+  // client IP and Origin. The old content-length describes the form body.
   const headers = new Headers(c.req.raw.headers);
   headers.set('content-type', 'application/json');
   headers.delete('content-length');
@@ -117,7 +116,7 @@ admin.post('/login', async (c) => {
 
   if (response.ok) return redirectWithCookies(response, HOME);
 
-  // Better Auth answers a bad password with a 401 response, not a thrown error.
+  // A bad password comes back as a 401 response, not a thrown error.
   const tooMany = response.status === 429;
   c.status(tooMany ? 429 : 401);
   return loginPage(
@@ -140,6 +139,7 @@ admin.post('/logout', async (c) => {
 admin.use('*', requireAdmin);
 
 admin.get('/', (c) => c.redirect(HOME, 302));
+admin.get('/login', (c) => c.redirect(HOME, 302));
 
 // Users first: "/users" would otherwise be read as a model name.
 admin.route('/', users);

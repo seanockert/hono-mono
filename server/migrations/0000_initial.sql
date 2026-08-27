@@ -53,6 +53,14 @@ CREATE TABLE IF NOT EXISTS "verification" (
   "updatedAt"  DATE
 );
 
+-- Better Auth rate limiting with storage: 'database'.
+CREATE TABLE IF NOT EXISTS "rateLimit" (
+  "id"          TEXT NOT NULL PRIMARY KEY,
+  "key"         TEXT NOT NULL UNIQUE,
+  "count"       INTEGER NOT NULL,
+  "lastRequest" INTEGER NOT NULL
+);
+
 -- Sign-in joins "account" on userId. Listing or revoking a user's sessions
 -- filters "session" on userId. Neither is covered by a UNIQUE constraint.
 CREATE INDEX IF NOT EXISTS "account_userId_idx" ON "account" ("userId");
