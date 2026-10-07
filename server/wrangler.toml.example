@@ -3,8 +3,8 @@ main = "src/index.ts"
 compatibility_date = "2026-08-24"
 compatibility_flags = ["nodejs_compat"]
 
-# D1 is single-region. Running the Worker next to the database costs one round
-# trip to reach it, instead of one per query from the user's location.
+# D1 is in one region. Smart placement runs the Worker near the database, so a
+# request has one long round trip, not one for each query.
 [placement]
 mode = "smart"
 
@@ -12,10 +12,10 @@ mode = "smart"
 "bun:sqlite" = "./src/lib/bun-sqlite-stub.ts"
 
 [vars]
-# Public URLs — update with your actual deployment URLs
+# Public URLs. Change these to your deployment URLs.
 BETTER_AUTH_URL = "https://your-app-name.workers.dev"
 CLIENT_URLS = "https://your-app-name-client.pages.dev"
-# BETTER_AUTH_SECRET is configured as a Wrangler secret
+# Set BETTER_AUTH_SECRET as a Wrangler secret, not here.
 
 [[d1_databases]]
 binding = "DATABASE"

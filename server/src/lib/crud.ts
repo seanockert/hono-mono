@@ -1,9 +1,12 @@
 import { Hono } from 'hono';
+import type { Context } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
-import type { ExpressionBuilder, Kysely } from 'kysely';
+import type { Expression, ExpressionBuilder, Kysely, SqlBool } from 'kysely';
+import { createAuth } from './auth';
 import { createDb, type AppDatabase, type CrudTable } from './db';
-import { requireAuth, type AuthVariables } from './middleware';
+import { fail } from './errors';
+import { requireAuth, type AuthVariables, type Session } from './middleware';
 import { getEnv, type AppEnv } from './env';
 import { slugify, UUID_REGEX } from './utils';
 
@@ -12,14 +15,16 @@ export type CrudTableName = {
 }[keyof AppDatabase] &
   string;
 
-// Every CRUD table has the same columns, so queries build against one shared
-// table type instead of each concrete one.
+// All CRUD tables have the same columns, so queries use one shared table type.
 type CrudSchema = Record<string, CrudTable>;
 export type CrudDb = Kysely<CrudSchema>;
 
+type Env = { Bindings: AppEnv; Variables: AuthVariables };
+type User = Session['user'];
+type Filter = (eb: ExpressionBuilder<CrudSchema, string>) => Expression<SqlBool>;
 type Restrictable<T> = { where(column: 'id' | 'authorId', op: '=', value: string): T };
 
-const STATUS = ['draft', 'published', 'archived'] as const;
+export const STATUS = ['draft', 'published', 'archived'] as const;
 
 const listSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -30,6 +35,8 @@ const listSchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
 });
 
+export type ListQuery = z.infer<typeof listSchema>;
+
 const createSchema = z.object({
   title: z.string().min(1),
   content: z.string().optional(),
@@ -38,13 +45,32 @@ const createSchema = z.object({
 
 const updateSchema = z.object({
   title: z.string().min(1).optional(),
-  slug: z.string().min(1).optional(),
+  slug: z
+    .string()
+    .transform(slugify)
+    .pipe(z.string().min(1, 'Slug must contain a letter or a digit'))
+    .optional(),
   content: z.string().nullable().optional(),
   status: z.enum(STATUS).optional(),
 });
 
+/** Sends a failed validation as `{ error }`, the same as all other errors. */
+const onInvalid = (
+  result: { success: true } | { success: false; error: z.core.$ZodError },
+  c: Context,
+) =>
+  result.success
+    ? undefined
+    : fail(
+        c,
+        400,
+        result.error.issues
+          .map((issue) => `${issue.path.join('.') || 'body'}: ${issue.message}`)
+          .join('; '),
+      );
+
 export const uniqueSlug = async (db: CrudDb, table: string, title: string, excludeId?: string) => {
-  const base = slugify(title);
+  const base = slugify(title) || 'untitled';
   let query = db.selectFrom(table).select('slug').where('slug', 'like', `${base}%`);
   if (excludeId) query = query.where('id', '!=', excludeId);
 
@@ -56,17 +82,55 @@ export const uniqueSlug = async (db: CrudDb, table: string, title: string, exclu
   return `${base}-${n}`;
 };
 
-/** Narrows a write to rows the caller owns. Admins keep all rows. */
-const restrict = <T extends Restrictable<T>>(
-  query: T,
-  id: string,
-  user: AuthVariables['session']['user'],
-): T => {
+/** Gives one page of rows and the total. `scope` limits the rows that the caller can see. */
+export const listRows = async (db: CrudDb, table: string, query: ListQuery, scope?: Filter) => {
+  const { page, limit, search, status, sortBy, sortOrder } = query;
+  const filters: Filter[] = scope ? [scope] : [];
+
+  if (search) {
+    const pattern = `%${search}%`;
+    filters.push((eb) => eb.or([eb('title', 'like', pattern), eb('content', 'like', pattern)]));
+  }
+  if (status) filters.push((eb) => eb('status', '=', status));
+
+  let rows = db.selectFrom(table).selectAll();
+  let count = db.selectFrom(table).select((eb) => eb.fn.countAll<number>().as('count'));
+  for (const filter of filters) {
+    rows = rows.where(filter);
+    count = count.where(filter);
+  }
+
+  const [data, countRow] = await Promise.all([
+    rows
+      .orderBy(sortBy, sortOrder)
+      .limit(limit)
+      .offset((page - 1) * limit)
+      .execute(),
+    count.executeTakeFirst(),
+  ]);
+
+  return { data, total: Number(countRow?.count ?? 0) };
+};
+
+/** Published rows are public. Authors also see their own rows. Admins see all rows. */
+const readable = (user?: User): Filter | undefined => {
+  if (user?.role === 'admin') return undefined;
+  return (eb) =>
+    user
+      ? eb.or([eb('status', '=', 'published'), eb('authorId', '=', user.id)])
+      : eb('status', '=', 'published');
+};
+
+const viewer = async (c: Context<Env>) =>
+  (await createAuth(getEnv(c.env)).api.getSession({ headers: c.req.raw.headers }))?.user;
+
+/** Limits a write to rows of the caller. Admins can write all rows. */
+const restrict = <T extends Restrictable<T>>(query: T, id: string, user: User): T => {
   const byId = query.where('id', '=', id);
   return user.role === 'admin' ? byId : byId.where('authorId', '=', user.id);
 };
 
-/** 404 if the row is missing, 403 if it exists but is not the caller's. */
+/** 404 if the row is missing. 403 if the row exists but is not the caller's. */
 const refuse = async (db: CrudDb, table: string, id: string) => {
   const found = await db.selectFrom(table).select('id').where('id', '=', id).executeTakeFirst();
   return found
@@ -74,58 +138,35 @@ const refuse = async (db: CrudDb, table: string, id: string) => {
     : ({ error: 'Not found', status: 404 } as const);
 };
 
-// Hono matches in registration order: register custom routes before mounting
-// these, or `GET /:idOrSlug` shadows them.
+// Hono matches routes in registration order. Register custom routes before
+// these, or `GET /:idOrSlug` catches them.
 export const createCrudRoutes = (table: CrudTableName) => {
-  const routes = new Hono<{ Bindings: AppEnv; Variables: AuthVariables }>();
+  const routes = new Hono<Env>();
   const getDb = (env: AppEnv) => createDb(env) as unknown as CrudDb;
 
-  routes.get('/', zValidator('query', listSchema), async (c) => {
-    const { page, limit, search, status, sortBy, sortOrder } = c.req.valid('query');
+  routes.get('/', zValidator('query', listSchema, onInvalid), async (c) => {
+    const query = c.req.valid('query');
     const db = getDb(getEnv(c.env));
-
-    let rows = db.selectFrom(table).selectAll();
-    let count = db.selectFrom(table).select((eb) => eb.fn.countAll<number>().as('count'));
-
-    if (search) {
-      const pattern = `%${search}%`;
-      const matches = (eb: ExpressionBuilder<CrudSchema, string>) =>
-        eb.or([eb('title', 'like', pattern), eb('content', 'like', pattern)]);
-      rows = rows.where(matches);
-      count = count.where(matches);
-    }
-
-    if (status) {
-      rows = rows.where('status', '=', status);
-      count = count.where('status', '=', status);
-    }
-
-    const [data, countRow] = await Promise.all([
-      rows
-        .orderBy(sortBy, sortOrder)
-        .limit(limit)
-        .offset((page - 1) * limit)
-        .execute(),
-      count.executeTakeFirst(),
-    ]);
-
-    const total = Number(countRow?.count ?? 0);
+    const { data, total } = await listRows(db, table, query, readable(await viewer(c)));
+    const { page, limit } = query;
     return c.json({ data, total, page, limit, totalPages: Math.ceil(total / limit) });
   });
 
   routes.get('/:idOrSlug', async (c) => {
     const idOrSlug = c.req.param('idOrSlug');
+    const scope = readable(await viewer(c));
 
-    const row = await getDb(getEnv(c.env))
+    let query = getDb(getEnv(c.env))
       .selectFrom(table)
       .selectAll()
-      .where(UUID_REGEX.test(idOrSlug) ? 'id' : 'slug', '=', idOrSlug)
-      .executeTakeFirst();
+      .where(UUID_REGEX.test(idOrSlug) ? 'id' : 'slug', '=', idOrSlug);
+    if (scope) query = query.where(scope);
 
-    return row ? c.json(row) : c.json({ error: 'Not found' }, 404);
+    const row = await query.executeTakeFirst();
+    return row ? c.json(row) : fail(c, 404, 'Not found');
   });
 
-  routes.post('/', requireAuth, zValidator('json', createSchema), async (c) => {
+  routes.post('/', requireAuth, zValidator('json', createSchema, onInvalid), async (c) => {
     const { title, content, status } = c.req.valid('json');
     const db = getDb(getEnv(c.env));
     const now = new Date().toISOString();
@@ -148,7 +189,7 @@ export const createCrudRoutes = (table: CrudTableName) => {
     return c.json(row, 201);
   });
 
-  routes.put('/:id', requireAuth, zValidator('json', updateSchema), async (c) => {
+  routes.put('/:id', requireAuth, zValidator('json', updateSchema, onInvalid), async (c) => {
     const id = c.req.param('id');
     const updates = c.req.valid('json');
     const db = getDb(getEnv(c.env));
@@ -169,7 +210,7 @@ export const createCrudRoutes = (table: CrudTableName) => {
     if (row) return c.json(row);
 
     const { error, status } = await refuse(db, table, id);
-    return c.json({ error }, status);
+    return fail(c, status, error);
   });
 
   routes.delete('/:id', requireAuth, async (c) => {
@@ -181,7 +222,7 @@ export const createCrudRoutes = (table: CrudTableName) => {
     if (row) return new Response(null, { status: 204 });
 
     const { error, status } = await refuse(db, table, id);
-    return c.json({ error }, status);
+    return fail(c, status, error);
   });
 
   return routes;

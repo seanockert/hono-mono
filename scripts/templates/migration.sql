@@ -9,6 +9,5 @@ CREATE TABLE IF NOT EXISTS "__model__" (
   "updatedAt" TEXT NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS "__model___slug_idx"      ON "__model__" ("slug");
 CREATE INDEX IF NOT EXISTS "__model___status_idx"    ON "__model__" ("status");
 CREATE INDEX IF NOT EXISTS "__model___createdAt_idx" ON "__model__" ("createdAt");

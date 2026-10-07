@@ -1,5 +1,5 @@
 -- Full schema. Better Auth tables first, then the application tables.
--- Better Auth needs "issuer" on account from 1.7 on, to tell local accounts from OAuth.
+-- Better Auth 1.7 and later needs "issuer" on account. It identifies OAuth accounts.
 
 CREATE TABLE IF NOT EXISTS "user" (
   "id"            TEXT NOT NULL PRIMARY KEY,
@@ -53,7 +53,7 @@ CREATE TABLE IF NOT EXISTS "verification" (
   "updatedAt"  DATE
 );
 
--- Better Auth rate limiting with storage: 'database'.
+-- Better Auth rate limit counters (storage: 'database').
 CREATE TABLE IF NOT EXISTS "rateLimit" (
   "id"          TEXT NOT NULL PRIMARY KEY,
   "key"         TEXT NOT NULL UNIQUE,
@@ -61,8 +61,8 @@ CREATE TABLE IF NOT EXISTS "rateLimit" (
   "lastRequest" INTEGER NOT NULL
 );
 
--- Sign-in joins "account" on userId. Listing or revoking a user's sessions
--- filters "session" on userId. Neither is covered by a UNIQUE constraint.
+-- Sign-in joins "account" on userId. Session list and revoke filter "session"
+-- on userId. No UNIQUE constraint covers these columns.
 CREATE INDEX IF NOT EXISTS "account_userId_idx" ON "account" ("userId");
 CREATE INDEX IF NOT EXISTS "session_userId_idx" ON "session" ("userId");
 
@@ -77,6 +77,5 @@ CREATE TABLE IF NOT EXISTS "item" (
   "updatedAt" TEXT NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS "item_slug_idx"      ON "item" ("slug");
 CREATE INDEX IF NOT EXISTS "item_status_idx"    ON "item" ("status");
 CREATE INDEX IF NOT EXISTS "item_createdAt_idx" ON "item" ("createdAt");

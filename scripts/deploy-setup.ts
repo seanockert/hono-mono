@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 /**
- * Cloudflare deployment setup: makes the D1 database, generates wrangler.toml,
- * sets the secrets, and runs the remote migrations.
+ * Sets up Cloudflare deployment. Creates the D1 database, writes wrangler.toml,
+ * sets the secrets and applies the remote migrations.
  *
  * Usage: bun run deploy:setup <appName>
  * Example: bun run deploy:setup hono-mono
@@ -57,7 +57,7 @@ if (listResult.exitCode === 0) {
       console.log(`  ✓ D1 database "${dbName}" already exists (${databaseId})`);
     }
   } catch {
-    // Parse failed. Falls through to create it below.
+    // Parse failed. The next step creates the database.
   }
 }
 
@@ -144,7 +144,19 @@ if (existsSync(wranglerPath)) {
   console.log('  ✓ server/wrangler.toml generated');
 }
 
-// ─── 6. Set BETTER_AUTH_SECRET ──────────────────────────────────────────────
+// ─── 6. Set the Pages project name ──────────────────────────────────────────
+
+// Must agree with the client URL in CLIENT_URLS, or CORS blocks the client.
+const clientWranglerPath = join(root, 'client/wrangler.toml');
+const clientToml = readFileSync(clientWranglerPath, 'utf-8');
+writeFileSync(
+  clientWranglerPath,
+  clientToml.replace(/^name = ".*?"/m, `name = "${appName}-client"`),
+  'utf-8',
+);
+console.log(`  ✓ client/wrangler.toml project name set to "${appName}-client"`);
+
+// ─── 7. Set BETTER_AUTH_SECRET ──────────────────────────────────────────────
 
 const serverEnvPath = join(root, 'server/.env');
 let secret = '';
@@ -177,7 +189,7 @@ if (secret) {
   console.warn('    echo "your-secret" | bunx wrangler secret put BETTER_AUTH_SECRET');
 }
 
-// ─── 7. Run remote migrations ───────────────────────────────────────────────
+// ─── 8. Run remote migrations ───────────────────────────────────────────────
 
 console.log('  Running remote migrations...');
 const migrateResult = Bun.spawnSync(
@@ -194,7 +206,7 @@ if (migrateResult.exitCode !== 0) {
   console.warn(`    cd server && bunx wrangler d1 migrations apply ${dbName} --remote`);
 }
 
-// ─── 8. Generate client/.env.production ─────────────────────────────────────
+// ─── 9. Generate client/.env.production ─────────────────────────────────────
 
 const clientEnvProdPath = join(root, 'client/.env.production');
 if (existsSync(clientEnvProdPath)) {

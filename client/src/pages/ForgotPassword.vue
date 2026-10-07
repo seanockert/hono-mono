@@ -35,7 +35,7 @@
 import { ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import { authClient } from '../lib/auth-client';
-import { getErrorMessage } from '../lib/auth-errors';
+import { getErrorMessage, NETWORK_ERROR } from '../lib/auth-errors';
 
 const email = ref('');
 const errorMessage = ref('');
@@ -53,7 +53,7 @@ const handleSubmit = async () => {
   isSending.value = true;
 
   try {
-    // Resolved against the API origin, so it has to be absolute.
+    // Must be absolute. The server resolves it against the API origin.
     const result = await authClient.requestPasswordReset({
       email: email.value,
       redirectTo: `${window.location.origin}/reset-password`,
@@ -64,8 +64,8 @@ const handleSubmit = async () => {
     } else {
       isSent.value = true;
     }
-  } catch (error: any) {
-    errorMessage.value = getErrorMessage(error);
+  } catch {
+    errorMessage.value = NETWORK_ERROR;
   } finally {
     isSending.value = false;
   }

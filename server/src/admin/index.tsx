@@ -39,9 +39,13 @@ const loginPage = (c: Context<Env>, notice?: string) =>
     ),
   });
 
-/** Not `requireAuth`: that answers JSON 401, no use to a browser. */
+/** Not `requireAuth`, which sends a JSON 401. A browser needs an HTML page. */
 const requireAdmin = createMiddleware<Env>(async (c, next) => {
-  const session = await createAuth(getEnv(c.env)).api.getSession({ headers: c.req.raw.headers });
+  // No cookie cache, so that a ban or a role change applies at once.
+  const session = await createAuth(getEnv(c.env)).api.getSession({
+    headers: c.req.raw.headers,
+    query: { disableCookieCache: true },
+  });
 
   if (!session) {
     c.status(401);
@@ -64,7 +68,7 @@ const requireAdmin = createMiddleware<Env>(async (c, next) => {
     });
   }
 
-  c.set('session', session as AuthVariables['session']);
+  c.set('session', session);
   await next();
 });
 
@@ -92,13 +96,13 @@ admin.use(
   csrf(),
 );
 
-// Above the guard: signing in cannot need a session. Add new routes below it.
+// Before the guard, because sign-in has no session. Add new routes after the guard.
 admin.post('/login', async (c) => {
   const body = await c.req.parseBody();
 
-  // Through the handler, not auth.api: only the handler rate limits, so a direct
-  // api call leaves this open to password guessing. Original headers carry the
-  // client IP and Origin. The old content-length describes the form body.
+  // Use the handler, not auth.api. Only the handler applies the rate limit that
+  // stops password guessing. Keep the original headers for client IP and Origin.
+  // Remove content-length, because it is the length of the form body.
   const headers = new Headers(c.req.raw.headers);
   headers.set('content-type', 'application/json');
   headers.delete('content-length');
@@ -116,7 +120,7 @@ admin.post('/login', async (c) => {
 
   if (response.ok) return redirectWithCookies(response, HOME);
 
-  // A bad password comes back as a 401 response, not a thrown error.
+  // A bad password gives a 401 response. It does not throw.
   const tooMany = response.status === 429;
   c.status(tooMany ? 429 : 401);
   return loginPage(
@@ -127,7 +131,7 @@ admin.post('/login', async (c) => {
   );
 });
 
-// Also above the guard: behind it, a non-admin could never sign out.
+// Before the guard, so that a non-admin can sign out.
 admin.post('/logout', async (c) => {
   const response = await createAuth(getEnv(c.env)).api.signOut({
     headers: c.req.raw.headers,
@@ -141,9 +145,9 @@ admin.use('*', requireAdmin);
 admin.get('/', (c) => c.redirect(HOME, 302));
 admin.get('/login', (c) => c.redirect(HOME, 302));
 
-// Users first: "/users" would otherwise be read as a model name.
+// Users first. Otherwise "/users" matches as a model name.
 admin.route('/', users);
 admin.route('/', records);
 
-// Last, so anything else under /admin gets the HTML 404 and not the JSON one.
+// Last. All other /admin paths get the HTML 404, not the JSON 404.
 admin.all('*', (c) => notFoundPage(c, c.get('session').user.email));

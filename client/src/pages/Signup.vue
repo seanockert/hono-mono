@@ -41,7 +41,6 @@
       </button>
     </form>
 
-    <!-- <button type="button" @click="handleGithubSignup">Sign up with GitHub</button> -->
     <RouterLink :to="{ name: 'login' }">&larr; Back to Login</RouterLink>
   </section>
 </template>
@@ -50,7 +49,7 @@
 import { ref, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import { authClient } from '../lib/auth-client';
-import { getErrorMessage } from '../lib/auth-errors';
+import { getErrorMessage, NETWORK_ERROR } from '../lib/auth-errors';
 
 const email = ref('');
 const password = ref('');
@@ -78,23 +77,14 @@ const handleSubmit = async (e: Event) => {
     });
 
     if (result.error) {
-      handleAuthError(result.error);
+      errorMessage.value = getErrorMessage(result.error);
     }
-  } catch (error: any) {
-    handleAuthError(error);
+  } catch {
+    errorMessage.value = NETWORK_ERROR;
   } finally {
     isSigningUp.value = false;
   }
 };
-
-const handleAuthError = (error: any) => {
-  console.error('Signup error:', error);
-  errorMessage.value = getErrorMessage(error);
-};
-
-// const handleGithubSignup = async () => {
-//   await authClient.signIn.social({ provider: 'github' });
-// };
 </script>
 
 <style scoped>

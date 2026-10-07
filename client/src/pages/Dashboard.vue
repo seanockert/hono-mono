@@ -90,6 +90,6 @@ const handleUpdateName = async (e: Event) => {
 const handleSignOut = async () => {
   clearStoredToken();
   await authClient.signOut();
-  // No router.push here: the App.vue watchEffect navigates on session change.
+  // No router.push. App.vue navigates when the session changes.
 };
 </script>

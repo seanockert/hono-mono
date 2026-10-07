@@ -1,9 +1,9 @@
 #!/usr/bin/env bun
 /**
- * Promotes a user to admin, or back down to user.
+ * Sets the role of a user to admin or to user.
  *
- * Better Auth declares `role` with `input: false` and admin.setRole needs an
- * existing admin, so this script makes the first one.
+ * Better Auth blocks client writes to `role`, and admin.setRole needs an admin.
+ * Use this script to make the first admin.
  *
  * Usage:
  *   bun run admin <email>            Local database
@@ -60,7 +60,7 @@ const localDriver = (): Driver => {
 
 // ─── Remote: wrangler d1 execute ─────────────────────────────────────────────
 
-/** Not a security boundary. An address can legitimately contain a quote. */
+/** An email address can contain a quote. This is not a security control. */
 const quote = (value: string) => `'${value.replaceAll("'", "''")}'`;
 
 const remoteDriver = (): Driver => {
@@ -78,7 +78,7 @@ const remoteDriver = (): Driver => {
 
     if (result.exitCode !== 0) fail(`wrangler failed:\n\n${result.stderr.toString().trim()}`);
 
-    // wrangler prints progress lines before the JSON payload.
+    // Wrangler writes progress lines before the JSON.
     const output = result.stdout.toString();
     const start = output.indexOf('[');
     if (start === -1) fail(`Could not parse wrangler output:\n\n${output.trim()}`);

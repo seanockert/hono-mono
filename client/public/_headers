@@ -1,4 +1,4 @@
-# Response headers for Cloudflare Pages. Copied to dist/ by the build.
+# Cloudflare Pages response headers. The build copies this file to dist/.
 # https://developers.cloudflare.com/pages/configuration/headers/
 
 /*
@@ -8,6 +8,6 @@
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: DENY
 
-# connect-src allows any HTTPS origin because the API URL differs per deployment.
-# Pin it to your own once you know it:
+# connect-src allows all HTTPS origins, because each deployment has a different API URL.
+# When you know your API URL, set it here:
 #   connect-src 'self' https://your-app.your-name.workers.dev

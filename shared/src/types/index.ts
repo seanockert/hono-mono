@@ -1,11 +1,3 @@
-export type ApiResponse = {
-  message: string;
-};
-
-export type ApiErrorResponse = {
-  error: string;
-};
-
 export type UserRole = 'user' | 'admin';
 
 export interface User {

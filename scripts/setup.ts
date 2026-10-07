@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * One-command setup script. Idempotent, safe to re-run.
+ * Sets up the project. It is safe to run again.
  *
  * Usage: bun run setup [modelName] [pluralName]
  *
@@ -62,8 +62,8 @@ if (modelArg && modelArg.toLowerCase() !== 'item') {
 
     console.log(`\n  Renaming "item" -> "${model}"...\n`);
 
-    // `Item` is replaced inside compound identifiers too (ItemTable, fetchItems),
-    // so the DOM Storage methods are held aside first.
+    // This also replaces `Item` in compound names (ItemTable, fetchItems).
+    // Protect the DOM Storage methods (getItem, setItem, removeItem) first.
     const HELD = '__STORAGE_ITEM__';
     const replaceContent = (content: string) =>
       content
@@ -87,7 +87,7 @@ if (modelArg && modelArg.toLowerCase() !== 'item') {
     };
 
     const written = [
-      // One schema file, so it is rewritten in place rather than renamed.
+      // The schema is one file. Change it in place, do not rename it.
       transform('server/migrations/0000_initial.sql'),
       transform('server/src/routes/items.ts', `server/src/routes/${models}.ts`),
       transform('server/src/lib/db.ts'),

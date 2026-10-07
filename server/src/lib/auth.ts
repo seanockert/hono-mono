@@ -1,12 +1,11 @@
 import { betterAuth } from 'better-auth';
 import { admin, bearer } from 'better-auth/plugins';
-import { Kysely } from 'kysely';
-import { D1Dialect } from 'kysely-d1';
-import { dbPath } from './db';
+import { createDb } from './db';
 import { sendEmail } from './email';
 import type { AppEnv } from './env';
 
-// scrypt, the better-auth default, exceeds the Workers CPU limit and 503s on sign-up.
+// PBKDF2, not the Better Auth default scrypt. scrypt exceeds the Workers CPU limit
+// and sign-up fails with a 503.
 const toB64 = (buf: Uint8Array) => btoa(Array.from(buf, (c) => String.fromCharCode(c)).join(''));
 const fromB64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 
@@ -47,7 +46,7 @@ async function verifyPassword({
   const derived = await pbkdf2Key(password, fromB64(saltB64), parseInt(iterStr));
   if (derived.length !== expected.length) return false;
   let diff = 0;
-  // No early exit on mismatch: that leaks timing. `?? 0` never runs.
+  // Compare all bytes. An early exit leaks timing. `?? 0` is for the type checker only.
   for (let i = 0; i < derived.length; i++) diff |= (derived[i] ?? 0) ^ (expected[i] ?? 0);
   return diff === 0;
 }
@@ -55,7 +54,7 @@ async function verifyPassword({
 export const authConfig = {
   emailAndPassword: { enabled: true, password: { hash: hashPassword, verify: verifyPassword } },
   plugins: [admin(), bearer()],
-  // Database, not memory: each Workers isolate has its own memory.
+  // Database, not memory, because each Workers isolate has its own memory.
   rateLimit: {
     enabled: true,
     storage: 'database' as const,
@@ -64,11 +63,11 @@ export const authConfig = {
     customRules: {
       '/sign-in/email': { window: 60, max: 5 },
       '/sign-up/email': { window: 300, max: 5 },
-      // Not "/forget-password", which matches no endpoint in 1.7.
+      // Not "/forget-password". That endpoint does not exist in 1.7.
       '/request-password-reset': { window: 300, max: 3 },
     },
   },
-  // Saves a D1 round trip per getSession. Falls back to the db if the cookie is blocked.
+  // Removes one D1 query from each getSession. If the cookie is blocked, reads the database.
   session: { cookieCache: { enabled: true, maxAge: 300 } },
   user: {
     additionalFields: {
@@ -109,8 +108,8 @@ const createAuthInstance = (env: AppEnv) => {
 
   const baseConfig = {
     ...authConfig,
-    // Here, not in authConfig: needs `env`, and authConfig must stay a plain
-    // const for auth.cli.ts to import.
+    // Not in authConfig, because it needs `env`. auth.cli.ts imports authConfig,
+    // so authConfig must stay a plain const.
     emailAndPassword: {
       ...authConfig.emailAndPassword,
       sendResetPassword: ({ user, url }: { user: { email: string }; url: string }) =>
@@ -120,7 +119,7 @@ const createAuthInstance = (env: AppEnv) => {
           text: `Open this link to choose a new password:\n\n${url}\n\nThe link expires in one hour. If you did not ask for a reset, ignore this email.`,
         }),
     },
-    // Unused until emailAndPassword.requireEmailVerification is set.
+    // Not used until you set emailAndPassword.requireEmailVerification.
     emailVerification: {
       sendVerificationEmail: ({ user, url }: { user: { email: string }; url: string }) =>
         sendEmail(env, {
@@ -135,32 +134,23 @@ const createAuthInstance = (env: AppEnv) => {
     trustedOrigins,
   };
 
-  if (env.DATABASE) {
-    const db = new Kysely({
-      dialect: new D1Dialect({
-        database: env.DATABASE as import('@cloudflare/workers-types').D1Database,
-      }),
-    });
-
-    return betterAuth({
-      ...baseConfig,
-      database: { db, type: 'sqlite' },
-      advanced: {
-        defaultCookieAttributes: { sameSite: 'none', secure: true, httpOnly: true },
-        // Cloudflare overwrites this header, so it can be trusted. Without it
-        // every caller shares one rate-limit bucket and one attacker locks out
-        // everybody. Not set on the Bun path, where the header is forgeable.
-        ipAddress: { ipAddressHeaders: ['cf-connecting-ip'] },
-      },
-    });
-  }
-
-  const { Database } = require('bun:sqlite');
-  return betterAuth({ ...baseConfig, database: new Database(dbPath()) });
+  return betterAuth({
+    ...baseConfig,
+    database: { db: createDb(env), type: 'sqlite' },
+    advanced: env.DATABASE
+      ? {
+          defaultCookieAttributes: { sameSite: 'none', secure: true, httpOnly: true },
+          // Cloudflare sets this header, so it is safe to trust. Without it, all callers
+          // share one rate limit bucket and one attacker can lock out all users.
+          // Not set on the Bun path, because there a client can forge the header.
+          ipAddress: { ipAddressHeaders: ['cf-connecting-ip'] },
+        }
+      : undefined,
+  });
 };
 
-// One instance per isolate: betterAuth() re-inits the D1 connection and every plugin.
-// Typed from createAuthInstance, not betterAuth: Auth<O> is invariant in O.
+// One instance for each isolate. betterAuth() starts the D1 connection and all plugins again.
+// Type from createAuthInstance, not betterAuth, because Auth<O> is invariant in O.
 let _auth: ReturnType<typeof createAuthInstance> | null = null;
 let _authKey: string | null = null;
 

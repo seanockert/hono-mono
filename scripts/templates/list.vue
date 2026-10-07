@@ -6,7 +6,7 @@
     </header>
 
     <form v-if="session" class="inline-zero inline-form" @submit.prevent="handleCreate">
-      <label for="newTitle" hidden>Update title</label>
+      <label for="newTitle" hidden>New __model__ title</label>
       <input
         v-model="newTitle"
         id="newTitle"
@@ -19,8 +19,8 @@
       </button>
     </form>
 
-    <div v-if="isLoading">Loading...</div>
-    <div v-else-if="error" class="error-message">{{ error }}</div>
+    <div v-if="error" class="error-message">{{ error }}</div>
+    <div v-else-if="!hasLoaded">Loading...</div>
     <div v-else-if="!__models__.length">No __models__ yet.</div>
 
     <table v-else>
@@ -68,7 +68,7 @@ const sessionData = authClient.useSession();
 const session = computed(() => sessionData.value.data);
 const {
   rows: __models__,
-  isLoading,
+  hasLoaded,
   error,
   create: create__Model__,
   remove: delete__Model__,

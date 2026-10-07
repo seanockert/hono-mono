@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Model scaffolder: generates the CRUD boilerplate for a new model.
+ * Generates the CRUD files for a new model.
  *
  * Usage:
  *   bun run generate <modelName> [pluralName] [--force]
@@ -47,7 +47,7 @@ const template = (name: string) =>
 
 const rel = (path: string) => path.replace(`${root}/`, '');
 
-// A model keeps its first migration, so --force never adds a duplicate.
+// Keep the first migration of a model, so that --force does not add a second one.
 const existingMigration = readdirSync(join(root, 'server/migrations')).find((file) =>
   file.endsWith(`_create_${models}.sql`),
 );
@@ -84,8 +84,8 @@ for (const [name, path] of targets) {
   console.log(`  Created: ${path}`);
 }
 
-// Inserts at `anchor`. Exits loudly rather than half-wiring a model. Skips if
-// `marker` is already present.
+// Inserts `addition` at `anchor`. Skips if `marker` is present. Exits if `anchor`
+// is missing, so that a model is never half connected.
 const touched = new Set(targets.map(([, path]) => path));
 
 const patch = (path: string, marker: string, anchor: string, addition: string, note: string) => {
@@ -147,7 +147,7 @@ patch(
   `mounted /api/${models}`,
 );
 
-// Appended, not anchored: setup.ts may have renamed the default model's file.
+// Append, not anchor. setup.ts can rename the file of the default model.
 const barrel = join(root, 'shared/src/types/index.ts');
 const barrelSource = readFileSync(barrel, 'utf-8');
 const reExport = `export * from './${model}';`;

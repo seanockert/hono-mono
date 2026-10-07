@@ -30,7 +30,6 @@
         &middot;
         <RouterLink :to="{ name: 'forgot-password' }">forgot password?</RouterLink>
       </div>
-      <!-- <button @click="handleGithubLogin">Login with GitHub</button> -->
     </form>
 
     <AuthTest />
@@ -41,7 +40,7 @@
 import { ref, computed, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import { authClient } from '../lib/auth-client';
-import { getErrorMessage } from '../lib/auth-errors';
+import { getErrorMessage, NETWORK_ERROR } from '../lib/auth-errors';
 import AuthTest from '../components/AuthTest.vue';
 import Logo from '../components/Logo.vue';
 
@@ -70,24 +69,15 @@ const handleLogin = async () => {
     });
 
     if (result.error) {
-      handleAuthError(result.error);
+      errorMessage.value = getErrorMessage(result.error);
     }
-    // No router.push here: the App.vue watchEffect navigates on session change.
-  } catch (error: any) {
-    handleAuthError(error);
+    // No router.push. App.vue navigates when the session changes.
+  } catch {
+    errorMessage.value = NETWORK_ERROR;
   } finally {
     isLoggingIn.value = false;
   }
 };
-
-const handleAuthError = (error: any) => {
-  console.error('Login error:', error);
-  errorMessage.value = getErrorMessage(error);
-};
-
-// const handleGithubLogin = async () => {
-//   await authClient.signIn.social({ provider: "github" })
-// }
 </script>
 
 <style scoped>

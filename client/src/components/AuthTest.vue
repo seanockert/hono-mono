@@ -11,7 +11,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { authHeaders } from '../lib/config';
+import { SERVER_URL, authHeaders } from '../lib/config';
 
 const isTesting = ref(false);
 const apiTestResult = ref('');
@@ -21,13 +21,8 @@ const testAuthenticatedEndpoint = async () => {
   apiTestResult.value = '';
 
   try {
-    const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3000';
-    const response = await fetch(`${serverUrl}/api/protected`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        ...authHeaders(),
-      },
+    const response = await fetch(`${SERVER_URL}/api/protected`, {
+      headers: authHeaders(),
       credentials: 'include',
     });
 

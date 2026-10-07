@@ -55,11 +55,11 @@
 import { ref, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { authClient } from '../lib/auth-client';
-import { getErrorMessage } from '../lib/auth-errors';
+import { getErrorMessage, NETWORK_ERROR } from '../lib/auth-errors';
 
 const route = useRoute();
 
-// Better Auth redirects here with ?token=, or ?error= if the link is dead.
+// Better Auth adds ?token= to a valid link, and ?error= to an expired or bad link.
 const token = route.query.error ? '' : ((route.query.token as string) ?? '');
 
 const password = ref('');
@@ -91,8 +91,8 @@ const handleSubmit = async () => {
     } else {
       isDone.value = true;
     }
-  } catch (error: any) {
-    errorMessage.value = getErrorMessage(error);
+  } catch {
+    errorMessage.value = NETWORK_ERROR;
   } finally {
     isSaving.value = false;
   }

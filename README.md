@@ -111,10 +111,10 @@ The admin also refuses any action that targets your own account, so you cannot d
 Every failed request answers with `{ "error": "..." }` and the matching HTTP status.
 The status already says the request failed, so the body does not repeat it.
 
-Throw `ApiError` from `server/src/lib/errors.ts` to choose the status:
+Throw Hono's `HTTPException` to choose the status:
 
 ```ts
-throw new ApiError(403, 'Not your item');
+throw new HTTPException(403, { message: 'Not your item' });
 ```
 
 Any other error becomes a 500 and is logged with its stack.
@@ -159,8 +159,9 @@ Sign up through the UI first, then run the script and log in again.
 An admin can then open `/admin` on the API origin.
 
 - Better Auth's default scrypt exceeds the Workers 10ms time limit on free plan so we switched to PBKDF2 with 100K iterations. This is still secure but on the lower end of OWASP recommendations so review this if shipping a production app.
-- Reads are public. Create needs a session. Update and delete need the caller to be the author, or an admin.
-  Change this in `restrict()` in `server/src/lib/crud.ts`.
+- Published rows are public. Authors also see their own drafts, and admins see all rows.
+  Create needs a session. Update and delete need the caller to be the author, or an admin.
+  Change this in `readable()` and `restrict()` in `server/src/lib/crud.ts`.
 
 ### Rate limiting
 

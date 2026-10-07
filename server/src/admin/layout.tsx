@@ -3,7 +3,7 @@ import { html } from 'hono/html';
 import type { Child, FC } from 'hono/jsx';
 import { ADMIN_MODELS, modelLabel } from '../lib/models';
 
-// Inline: no build step, no asset shared with the client.
+// Inline, so there is no build step and no asset shared with the client.
 const STYLES = `
 :root {
   color-scheme: light dark;
@@ -73,7 +73,7 @@ button.danger { color: var(--danger); }
 type LayoutProps = {
   c: Context;
   title: string;
-  /** Absent on login and forbidden, which show no nav. */
+  /** Not set on the login and forbidden pages. These pages have no nav. */
   email?: string;
   children?: Child;
 };
@@ -110,11 +110,11 @@ const Shell: FC<LayoutProps> = ({ c, title, email, children }) => (
   </html>
 );
 
-// JSX cannot express the doctype, so it is prepended here.
+// JSX cannot write the doctype, so add it here.
 export const page = (c: Context, props: Omit<LayoutProps, 'c'>) =>
   c.html(html`<!doctype html>${<Shell c={c} {...props} />}`);
 
-/** A mounted sub-app's notFound is ignored, and the app-wide one answers JSON. */
+/** Hono ignores notFound on a mounted sub-app, and the app notFound sends JSON. */
 export const notFoundPage = (c: Context, email?: string) => {
   c.status(404);
   return page(c, {

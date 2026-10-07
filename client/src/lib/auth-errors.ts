@@ -1,46 +1,24 @@
-const ERROR_MESSAGES = {
-  invalid: 'Invalid email or password. Check your credentials and try again.',
-  incorrect: 'Invalid email or password. Check your credentials and try again.',
-  wrong: 'Invalid email or password. Check your credentials and try again.',
-  exists: 'An account with this email already exists. Use a different email or log in instead.',
-  already: 'An account with this email already exists. Use a different email or log in instead.',
-  'not found': 'No account found with this email address.',
-  weak: 'Password must use numbers and letters',
-  short: 'Password must be at least 8 or more characters',
-  'email invalid': 'Enter a valid email address.',
-  network: 'Network error. Check your connection and try again.',
-  fetch: 'Network error. Check your connection and try again.',
-  'rate limit': 'Too many attempts. Wait a moment and try again.',
-  'too many': 'Too many attempts. Wait a moment and try again.',
+const ALREADY_EXISTS =
+  'An account with this email already exists. Use a different email or log in instead.';
 
-  unexpected: 'An unexpected error occurred. Try again.',
-} as const;
-
-export const getErrorMessage = (error: { code?: string; message?: string } | null): string => {
-  if (!error) {
-    return ERROR_MESSAGES.unexpected;
-  }
-
-  if (error.code) {
-    const code = error.code.toLowerCase();
-    for (const [key, value] of Object.entries(ERROR_MESSAGES)) {
-      if (code.includes(key)) {
-        return value;
-      }
-    }
-  }
-
-  if (!error.message) {
-    return ERROR_MESSAGES.unexpected;
-  }
-
-  const message = error.message.toLowerCase();
-
-  for (const [key, value] of Object.entries(ERROR_MESSAGES)) {
-    if (message.includes(key)) {
-      return value;
-    }
-  }
-
-  return error.message;
+/** Keyed by Better Auth error code. */
+const MESSAGES: Record<string, string> = {
+  INVALID_EMAIL_OR_PASSWORD: 'Invalid email or password. Check your credentials and try again.',
+  INVALID_EMAIL: 'Enter a valid email address.',
+  INVALID_PASSWORD: 'Invalid password.',
+  PASSWORD_TOO_SHORT: 'Password must be at least 8 characters.',
+  PASSWORD_TOO_LONG: 'Password is too long.',
+  USER_ALREADY_EXISTS: ALREADY_EXISTS,
+  USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL: ALREADY_EXISTS,
+  USER_NOT_FOUND: 'No account found with this email address.',
+  INVALID_TOKEN: 'That reset link is not valid, or it has expired. Ask for a new link.',
 };
+
+/** For a request that throws. The client gives HTTP errors as `result.error`. */
+export const NETWORK_ERROR = 'Network error. Check your connection and try again.';
+
+export const getErrorMessage = (error: { code?: string; message?: string; status?: number }) =>
+  (error.code && MESSAGES[error.code]) ||
+  (error.status === 429 ? 'Too many attempts. Wait a moment and try again.' : '') ||
+  error.message ||
+  'An unexpected error occurred. Try again.';

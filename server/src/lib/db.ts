@@ -19,10 +19,10 @@ export interface AppDatabase {
   item: ItemTable;
 }
 
-/** Resolved from this module, so the cwd does not matter. */
+/** Relative to this module, not to the cwd. */
 export const dbPath = () => decodeURIComponent(new URL('../honomono.db', import.meta.url).pathname);
 
-// One instance per isolate, rebuilt only if the binding changes.
+// One instance for each isolate. Rebuilt only when the binding changes.
 let cached: Kysely<AppDatabase> | null = null;
 let cachedFor: unknown;
 
@@ -42,8 +42,8 @@ export const createDb = (env: AppEnv): Kysely<AppDatabase> => {
   const { Database } = require('bun:sqlite');
   const sqlite = new Database(dbPath());
 
-  // Kysely's SqliteDialect needs a `reader` flag to tell reads from writes, and
-  // Bun's Statement has none. RETURNING makes a write produce rows, so it reads too.
+  // Kysely SqliteDialect uses a `reader` flag to find reads. Bun Statement has no
+  // such flag, so add it. A write with RETURNING gives rows, so it is also a read.
   const originalPrepare = sqlite.prepare.bind(sqlite);
   sqlite.prepare = (sql: string) => {
     const stmt = originalPrepare(sql);

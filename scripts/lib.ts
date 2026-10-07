@@ -3,7 +3,7 @@ import { join } from 'node:path';
 
 export const root = join(import.meta.dir, '..');
 
-// Locals in the generated templates. A model with one of these names shadows them.
+// Local names in the templates. A model with one of these names hides them.
 const RESERVED = new Set([
   'const',
   'class',
@@ -73,7 +73,7 @@ export function resolveModel(name: string, plural?: string) {
   return { model, Model: capitalise(model), models, Models: capitalise(models), defaultPlural };
 }
 
-/** Zero-padded to match wrangler's numbering. */
+/** Zero-padded, as Wrangler numbers migrations. */
 export function nextMigrationNumber(): string {
   const files = readdirSync(join(root, 'server/migrations')).filter((f) => f.endsWith('.sql'));
   const highest = files.reduce((max, file) => {

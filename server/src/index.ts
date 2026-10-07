@@ -6,14 +6,11 @@ import { sql } from 'kysely';
 import { admin } from './admin';
 import { createAuth, parseUrlList } from './lib/auth';
 import { createDb } from './lib/db';
-import { ApiError, fail } from './lib/errors';
+import { fail, uniqueViolation } from './lib/errors';
 import { requireAuth, type AuthVariables } from './lib/middleware';
 import { getEnv, type AppEnv } from './lib/env';
 import items from './routes/items';
 import type { User } from 'shared';
-
-export type { AppEnv } from './lib/env';
-export { getEnv } from './lib/env';
 
 const app = new Hono<{ Bindings: AppEnv; Variables: AuthVariables }>();
 
@@ -35,7 +32,7 @@ app.use('*', async (c, next) => {
       credentials: true,
       allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowHeaders: ['Content-Type', 'Authorization'],
-      // A cross-origin client preflights every request without this.
+      // Without this, a cross-origin client sends a preflight before each request.
       maxAge: 86400,
     });
   }
@@ -51,15 +48,16 @@ const apiHeaders = secureHeaders({
   },
 });
 
-// /admin sets its own stricter policy. secure-headers writes after next(), so
-// this outer instance would overwrite it.
+// /admin sets a stricter policy. secureHeaders writes after next(), so this
+// instance would overwrite it.
 app.use('*', (c, next) => (c.req.path.startsWith('/admin') ? next() : apiHeaders(c, next)));
 
 app.onError(async (error, c) => {
-  if (error instanceof ApiError) return fail(c, error.status, error.message);
+  const column = uniqueViolation(error);
+  if (column) return fail(c, 409, `That ${column.split('.').pop()} is already in use`);
 
-  // csrf() and friends throw HTTPException and carry the reason in a response,
-  // not in the message. Without this branch its 403 would become a 500.
+  // csrf() and similar middleware throw HTTPException with the reason in the
+  // response, not in the message. Without this branch, their 403 becomes a 500.
   if (error instanceof HTTPException) {
     const reason = error.message || (await error.getResponse().text());
     return fail(c, error.status, reason || 'Request failed');
@@ -73,7 +71,7 @@ app.notFound((c) => fail(c, 404, 'Not found'));
 
 app.get('/', (c) => c.text('Hola!'));
 
-// The Worker can be healthy while D1 is not, so the database is reported too.
+// Also checks the database, because the Worker can work when D1 does not.
 app.get('/health', async (c) => {
   let db = false;
   try {
@@ -85,15 +83,7 @@ app.get('/health', async (c) => {
   return c.json({ ok: db, db }, db ? 200 : 503);
 });
 
-app.all('/api/auth/*', async (c) => {
-  try {
-    const auth = createAuth(getEnv(c.env));
-    return await auth.handler(c.req.raw);
-  } catch (error) {
-    console.error('Auth error:', error);
-    return fail(c, 500, 'Internal server error');
-  }
-});
+app.all('/api/auth/*', (c) => createAuth(getEnv(c.env)).handler(c.req.raw));
 
 app.get('/api/protected', requireAuth, (c) =>
   c.json({
@@ -105,7 +95,7 @@ app.get('/api/protected', requireAuth, (c) =>
 
 app.route('/api/items', items);
 
-// Same origin as the API, so the session cookie works with no CORS.
+// Same origin as the API, so the session cookie works without CORS.
 app.route('/admin', admin);
 
 export default app;

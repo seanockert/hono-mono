@@ -6,18 +6,18 @@
     </header>
 
     <form v-if="session" class="inline-zero inline-form" @submit.prevent="handleCreate">
-      <label for="newTitle" hidden>Update title</label>
+      <label for="newTitle" hidden>New item title</label>
       <input v-model="newTitle" id="newTitle" placeholder="New item title" autofocus required />
       <button type="submit" :disabled="isCreating">
         {{ isCreating ? 'Adding...' : 'Add' }}
       </button>
     </form>
 
-    <div v-if="showLoading">Loading...</div>
-    <div v-else-if="error" class="error-message">{{ error }}</div>
-    <div v-else-if="hasLoaded && !items.length">No items yet.</div>
+    <div v-if="error" class="error-message">{{ error }}</div>
+    <div v-else-if="!hasLoaded">Loading...</div>
+    <div v-else-if="!items.length">No items yet.</div>
 
-    <table v-else-if="items.length">
+    <table v-else>
       <thead>
         <tr>
           <th>Title</th>
@@ -60,14 +60,7 @@ import { useItems } from '../composables/useItems';
 
 const sessionData = authClient.useSession();
 const session = computed(() => sessionData.value.data);
-const {
-  rows: items,
-  showLoading,
-  hasLoaded,
-  error,
-  create: createItem,
-  remove: deleteItem,
-} = useItems();
+const { rows: items, hasLoaded, error, create: createItem, remove: deleteItem } = useItems();
 
 const newTitle = ref('');
 const isCreating = ref(false);

@@ -7,11 +7,11 @@ export type Email = {
   html?: string;
 };
 
-// Resend's shared sender. Needs no verified domain.
+// Resend shared sender. It needs no verified domain.
 const DEFAULT_FROM = 'onboarding@resend.dev';
 
-// Over HTTP because Workers has no outbound SMTP. With no RESEND_API_KEY it
-// prints to the console, so password reset works in a fresh clone.
+// Sends over HTTP, because Workers has no outbound SMTP. If RESEND_API_KEY is not
+// set, writes the email to the console, so password reset works in a new clone.
 export const sendEmail = async (env: AppEnv, email: Email): Promise<void> => {
   if (!env.RESEND_API_KEY) {
     console.log(

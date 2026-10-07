@@ -2,20 +2,9 @@ import { createMiddleware } from 'hono/factory';
 import { createAuth } from './auth';
 import { getEnv, type AppEnv } from './env';
 
-export type AuthVariables = {
-  session: {
-    user: {
-      id: string;
-      name: string;
-      email: string;
-      role?: string | null;
-    };
-    session: {
-      id: string;
-      expiresAt: Date;
-    };
-  };
-};
+export type Session = ReturnType<typeof createAuth>['$Infer']['Session'];
+
+export type AuthVariables = { session: Session };
 
 export const requireAuth = createMiddleware<{ Bindings: AppEnv; Variables: AuthVariables }>(
   async (c, next) => {
@@ -26,7 +15,7 @@ export const requireAuth = createMiddleware<{ Bindings: AppEnv; Variables: AuthV
       return c.json({ error: 'Unauthorised' }, 401);
     }
 
-    c.set('session', session as AuthVariables['session']);
+    c.set('session', session);
     await next();
   },
 );

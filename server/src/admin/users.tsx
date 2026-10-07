@@ -14,8 +14,8 @@ const auth = (c: Context<Env>) => createAuth(getEnv(c.env));
 const backWithError = (c: Context<Env>, message: string) =>
   c.redirect(`/admin/users?error=${encodeURIComponent(message)}`, 303);
 
-// Refuses the caller as a target: Better Auth allows it and the list only hides
-// the controls, so without this an admin could delete their own account.
+// Refuses actions on the account of the caller. Better Auth allows them, and the
+// list only hides the buttons. Without this check, an admin can delete their own account.
 const act = async (c: Context<Env>, run: (userId: string) => Promise<unknown>) => {
   const userId = c.req.param('id') ?? '';
   if (userId === c.get('session').user.id) {

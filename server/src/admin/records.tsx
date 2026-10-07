@@ -1,15 +1,15 @@
 import { Hono } from 'hono';
 import type { Context } from 'hono';
 import type { FC } from 'hono/jsx';
-import type { ExpressionBuilder } from 'kysely';
-import { uniqueSlug, type CrudDb, type CrudTableName } from '../lib/crud';
+import { listRows, STATUS, uniqueSlug, type CrudDb, type CrudTableName } from '../lib/crud';
 import { createDb, type CrudTable } from '../lib/db';
 import { getEnv, type AppEnv } from '../lib/env';
+import { uniqueViolation } from '../lib/errors';
 import type { AuthVariables } from '../lib/middleware';
 import { isAdminModel, modelLabel } from '../lib/models';
+import { slugify } from '../lib/utils';
 import { notFoundPage, page } from './layout';
 
-const STATUS = ['draft', 'published', 'archived'] as const;
 const PAGE_SIZE = 20;
 
 type Env = { Bindings: AppEnv; Variables: AuthVariables };
@@ -31,7 +31,7 @@ const listQuery = (search: string, status: string, page?: number) => {
   return text ? `?${text}` : '';
 };
 
-/** Narrower than a full row, so a rejected save can be re-rendered. */
+/** Only the form fields, so that the page can show a rejected save again. */
 type FormRow = Pick<CrudTable, 'id' | 'title' | 'slug' | 'content' | 'status'>;
 
 const Form: FC<{ model: string; row?: FormRow }> = ({ model, row }) => (
@@ -95,36 +95,18 @@ records.get('/:model', async (c) => {
   if (!model) return notFoundPage(c, email(c));
 
   const search = c.req.query('search') ?? '';
-  const status = c.req.query('status') ?? '';
+  const status = STATUS.find((value) => value === c.req.query('status')) ?? '';
   const current = Math.max(1, Number(c.req.query('page')) || 1);
-  const db = getDb(c);
 
-  let rows = db.selectFrom(model).selectAll();
-  let count = db.selectFrom(model).select((eb) => eb.fn.countAll<number>().as('count'));
+  const { data, total } = await listRows(getDb(c), model, {
+    page: current,
+    limit: PAGE_SIZE,
+    search,
+    status: status || undefined,
+    sortBy: 'updatedAt',
+    sortOrder: 'desc',
+  });
 
-  if (search) {
-    const pattern = `%${search}%`;
-    const matches = (eb: ExpressionBuilder<Record<string, CrudTable>, string>) =>
-      eb.or([eb('title', 'like', pattern), eb('content', 'like', pattern)]);
-    rows = rows.where(matches);
-    count = count.where(matches);
-  }
-
-  if (status) {
-    rows = rows.where('status', '=', status);
-    count = count.where('status', '=', status);
-  }
-
-  const [data, countRow] = await Promise.all([
-    rows
-      .orderBy('updatedAt', 'desc')
-      .limit(PAGE_SIZE)
-      .offset((current - 1) * PAGE_SIZE)
-      .execute(),
-    count.executeTakeFirst(),
-  ]);
-
-  const total = Number(countRow?.count ?? 0);
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return page(c, {
@@ -280,19 +262,24 @@ records.post('/:model/:id', async (c) => {
   if (!title) return c.redirect(`/admin/${model}/${id}`, 303);
 
   const db = getDb(c);
-  const slug = String(body.slug ?? '').trim() || (await uniqueSlug(db, model, title, id));
+  const slug = slugify(String(body.slug ?? '')) || (await uniqueSlug(db, model, title, id));
   const content = String(body.content ?? '');
   const status = STATUS.find((value) => value === body.status) ?? 'draft';
 
-  // The slug column is UNIQUE, so a clash would otherwise surface as a 500.
-  const clash = await db
-    .selectFrom(model)
-    .select('id')
-    .where('slug', '=', slug)
-    .where('id', '!=', id)
-    .executeTakeFirst();
-
-  if (clash) {
+  try {
+    await db
+      .updateTable(model)
+      .set({
+        title,
+        slug,
+        content: content || null,
+        status,
+        updatedAt: new Date().toISOString(),
+      })
+      .where('id', '=', id)
+      .execute();
+  } catch (error) {
+    if (!uniqueViolation(error)) throw error;
     c.status(409);
     return editPage(
       c,
@@ -301,18 +288,6 @@ records.post('/:model/:id', async (c) => {
       'Another record already uses that slug.',
     );
   }
-
-  await db
-    .updateTable(model)
-    .set({
-      title,
-      slug,
-      content: content || null,
-      status,
-      updatedAt: new Date().toISOString(),
-    })
-    .where('id', '=', id)
-    .execute();
 
   return c.redirect(`/admin/${model}`, 303);
 });

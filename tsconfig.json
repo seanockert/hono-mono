@@ -1,18 +1,11 @@
 {
   "compilerOptions": {
-    // Environment setup & latest features
+    // Environment
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "target": "ESNext",
     "module": "ESNext",
     "moduleDetection": "force",
     "allowJs": true,
-
-    // Path resolution
-    "paths": {
-      "@server/*": ["./server/src/*"],
-      "@client/*": ["./client/src/*"],
-      "@shared/*": ["./shared/src/*"]
-    },
 
     // Module resolution
     "moduleResolution": "bundler",
@@ -20,17 +13,16 @@
     "esModuleInterop": true,
     "verbatimModuleSyntax": true,
 
-    // Strictness and best practices
+    // Strictness
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
-    "experimentalDecorators": true,
 
-    // Output control
+    // Output
     "skipLibCheck": true,
 
-    // Optional strict flags (disabled by default)
+    // Optional strict flags (off)
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false
