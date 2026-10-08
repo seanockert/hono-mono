@@ -1,7 +1,8 @@
 import type { Context } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 
-export const fail = (c: Context, status: ContentfulStatusCode, error: string) =>
+// Generic, so that the RPC client sees the exact status, not every status.
+export const fail = <S extends ContentfulStatusCode>(c: Context, status: S, error: string) =>
   c.json({ error }, status);
 
 /** Gives the column, as "table.column", if `error` is a SQLite UNIQUE violation. */

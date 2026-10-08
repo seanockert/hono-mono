@@ -8,6 +8,10 @@ compatibility_flags = ["nodejs_compat"]
 [placement]
 mode = "smart"
 
+# Workers Logs. Keeps console output and request logs in the dashboard.
+[observability]
+enabled = true
+
 [alias]
 "bun:sqlite" = "./src/lib/bun-sqlite-stub.ts"
 
@@ -22,3 +26,10 @@ binding = "DATABASE"
 database_name = "your-app-name"
 database_id = "xxx"
 migrations_dir = "migrations"
+
+# Limits the API writes (create, update, delete) for each user. On Bun there is no limit.
+# namespace_id is any number that is unique in your account. period is 10 or 60 seconds.
+[[ratelimits]]
+name = "WRITE_LIMITER"
+namespace_id = "1001"
+simple = { limit = 30, period = 60 }

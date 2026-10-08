@@ -12,7 +12,7 @@
 
 import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { buildShared, formatFiles, resolveModel, root, runMigrate } from './lib';
+import { formatFiles, resolveModel, root, runMigrate } from './lib';
 
 console.log('\n  Setting up hono-mono...\n');
 
@@ -92,9 +92,7 @@ if (modelArg && modelArg.toLowerCase() !== 'item') {
       transform('server/src/routes/items.ts', `server/src/routes/${models}.ts`),
       transform('server/src/lib/db.ts'),
       transform('server/src/lib/models.ts'),
-      transform('server/src/index.ts'),
-      transform('shared/src/types/item.ts', `shared/src/types/${model}.ts`),
-      transform('shared/src/types/index.ts'),
+      transform('server/src/api.ts'),
       transform('client/src/composables/useItems.ts', `client/src/composables/use${Models}.ts`),
       transform('client/src/pages/Items.vue', `client/src/pages/${Models}.vue`),
       transform('client/src/pages/Item.vue', `client/src/pages/${Model}.vue`),
@@ -114,9 +112,8 @@ if (modelArg && modelArg.toLowerCase() !== 'item') {
   }
 }
 
-// ─── 4. Build and migrate ────────────────────────────────────────────────────
+// ─── 4. Migrate ──────────────────────────────────────────────────────────────
 
-buildShared();
 runMigrate();
 
 console.log(`

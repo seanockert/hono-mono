@@ -24,19 +24,18 @@
     "generate": "bun run scripts/generate-model.ts",
     "admin": "bun run scripts/promote-admin.ts",
     "deploy:setup": "bun run scripts/deploy-setup.ts",
-    "build": "cd shared && bun run build && cd ../client && bun run build",
+    "build": "cd client && bun run build",
     "deploy": "cd server && bun run deploy && cd ../client && bun run deploy",
     "typecheck": "cd shared && bun run typecheck && cd ../server && bun run typecheck && cd ../client && bun run typecheck",
-    "postinstall": "cd shared && bun run build",
     "lint": "oxlint --ignore-path .gitignore .",
     "format": "oxfmt --ignore-path .gitignore .",
     "format:check": "oxfmt --ignore-path .gitignore --check ."
   },
   "devDependencies": {
-    "@types/bun": "^1.4.0",
-    "oxfmt": "^0.64.0",
-    "oxlint": "^1.79.0",
+    "@types/bun": "^1.4.2",
+    "oxfmt": "^0.72.0",
+    "oxlint": "^1.87.0",
     "typescript": "^6.0.3",
-    "wrangler": "^4.125.0"
+    "wrangler": "^4.148.0"
   }
 }

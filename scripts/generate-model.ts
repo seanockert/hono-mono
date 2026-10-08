@@ -13,7 +13,6 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import {
-  buildShared,
   formatFiles,
   nextMigrationNumber,
   resolveModel,
@@ -54,7 +53,6 @@ const existingMigration = readdirSync(join(root, 'server/migrations')).find((fil
 
 const targets: [template: string, path: string][] = [
   ['route.ts', `server/src/routes/${models}.ts`],
-  ['types.ts', `shared/src/types/${model}.ts`],
   ['composable.ts', `client/src/composables/use${Models}.ts`],
   ['list.vue', `client/src/pages/${Models}.vue`],
   ['detail.vue', `client/src/pages/${Model}.vue`],
@@ -132,7 +130,7 @@ patch(
 );
 
 patch(
-  'server/src/index.ts',
+  'server/src/api.ts',
   `from './routes/${models}'`,
   "import type { User } from 'shared';",
   `import ${models} from './routes/${models}';\nimport type { User } from 'shared';`,
@@ -140,50 +138,31 @@ patch(
 );
 
 patch(
-  'server/src/index.ts',
-  `app.route('/api/${models}'`,
-  'export default app;',
-  `app.route('/api/${models}', ${models});\n\nexport default app;`,
+  'server/src/api.ts',
+  `.route('/${models}'`,
+  'export const api = new Hono<Env>()',
+  `export const api = new Hono<Env>()\n  .route('/${models}', ${models})`,
   `mounted /api/${models}`,
-);
-
-// Append, not anchor. setup.ts can rename the file of the default model.
-const barrel = join(root, 'shared/src/types/index.ts');
-const barrelSource = readFileSync(barrel, 'utf-8');
-const reExport = `export * from './${model}';`;
-
-if (barrelSource.includes(reExport)) {
-  console.log(`  Skipped: shared/src/types/index.ts - ${Model} re-export already present`);
-} else {
-  writeFileSync(barrel, `${barrelSource.trimEnd()}\n${reExport}\n`, 'utf-8');
-  touched.add('shared/src/types/index.ts');
-  console.log(`  Patched: shared/src/types/index.ts - ${Model} re-export`);
-}
-
-patch(
-  'client/src/router.ts',
-  `./pages/${Models}.vue`,
-  "import NotFound from './pages/NotFound.vue';",
-  `import ${Models} from './pages/${Models}.vue';\nimport ${Model} from './pages/${Model}.vue';\nimport NotFound from './pages/NotFound.vue';`,
-  'page imports',
 );
 
 patch(
   'client/src/router.ts',
   `name: '${models}'`,
-  "  { name: 'not-found'",
-  `  { name: '${models}', path: '/${models}', component: ${Models} },\n` +
-    `  { name: '${model}', path: '/${model}/:slug', component: ${Model} },\n` +
-    `  { name: 'not-found'`,
+  "  {\n    name: 'not-found',",
+  `  { name: '${models}', path: '/${models}', component: () => import('./pages/${Models}.vue') },\n` +
+    `  { name: '${model}', path: '/${model}/:slug', component: () => import('./pages/${Model}.vue') },\n` +
+    `  {\n    name: 'not-found',`,
   'page routes',
 );
 
 formatFiles([...touched]);
-buildShared();
 runMigrate();
 
 console.log(`
   Done! ${Model} model is ready at /api/${models}
+
+  Add model columns in the migration, ${Model}Table in server/src/lib/db.ts,
+  and the \`fields\` argument in server/src/routes/${models}.ts.
 
   Add custom routes in server/src/routes/${models}.ts before the CRUD ones,
   or GET /:idOrSlug will shadow them.

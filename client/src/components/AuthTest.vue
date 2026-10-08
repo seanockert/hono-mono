@@ -11,7 +11,8 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { SERVER_URL, authHeaders } from '../lib/config';
+import { parseResponse } from 'hono/client';
+import { api, errorText } from '../lib/api';
 
 const isTesting = ref(false);
 const apiTestResult = ref('');
@@ -21,20 +22,10 @@ const testAuthenticatedEndpoint = async () => {
   apiTestResult.value = '';
 
   try {
-    const response = await fetch(`${SERVER_URL}/api/protected`, {
-      headers: authHeaders(),
-      credentials: 'include',
-    });
-
-    const result = await response.json();
-
-    if (response.ok) {
-      apiTestResult.value = JSON.stringify(result, null, 2);
-    } else {
-      apiTestResult.value = `Error ${response.status}: ${result.error || 'Unknown error'}`;
-    }
+    const result = await parseResponse(api.protected.$get());
+    apiTestResult.value = JSON.stringify(result, null, 2);
   } catch (error) {
-    apiTestResult.value = `Request failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+    apiTestResult.value = `Request failed: ${errorText(error, 'Unknown error')}`;
   } finally {
     isTesting.value = false;
   }

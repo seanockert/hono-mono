@@ -1,5 +1,6 @@
 import { Kysely, SqliteDialect } from 'kysely';
 import { D1Dialect } from 'kysely-d1';
+import type { Status } from 'shared';
 import type { AppEnv } from './env';
 
 export interface CrudTable {
@@ -7,7 +8,7 @@ export interface CrudTable {
   title: string;
   slug: string;
   content: string | null;
-  status: string;
+  status: Status;
   authorId: string | null;
   createdAt: string;
   updatedAt: string;
@@ -41,6 +42,8 @@ export const createDb = (env: AppEnv): Kysely<AppDatabase> => {
 
   const { Database } = require('bun:sqlite');
   const sqlite = new Database(dbPath());
+  // D1 enforces foreign keys. SQLite does not, unless this pragma is on.
+  sqlite.run('PRAGMA foreign_keys = ON');
 
   // Kysely SqliteDialect uses a `reader` flag to find reads. Bun Statement has no
   // such flag, so add it. A write with RETURNING gives rows, so it is also a read.

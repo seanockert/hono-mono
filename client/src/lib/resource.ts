@@ -1,62 +1,59 @@
 import { ref, onMounted, watch, toValue, type MaybeRefOrGetter, type Ref } from 'vue';
-import type { PaginatedResponse } from 'shared';
-import { SERVER_URL, authHeaders } from './config';
+import {
+  DetailedError,
+  parseResponse,
+  type ClientResponse,
+  type InferRequestType,
+  type InferResponseType,
+} from 'hono/client';
+import { errorText } from './api';
 
-type Row = { id: string; title: string; slug: string; content: string | null; status: string };
-type ListParams = Record<string, string | number | undefined>;
-type WriteInput<T extends Row> = Partial<Pick<T, 'title' | 'content' | 'status'>> & {
-  slug?: string;
+type Call = (...args: never[]) => Promise<ClientResponse<unknown>>;
+
+/** The shape of a `createCrudRoutes` endpoint on the RPC client, for example `api.items`. */
+type CrudEndpoint = {
+  $get: Call;
+  $post: Call;
+  ':idOrSlug': { $get: Call };
+  ':id': { $put: Call; $delete: Call };
 };
 
-class HttpError extends Error {
-  status: number;
-  constructor(status: number) {
-    super(`Request failed: ${status}`);
-    this.status = status;
-  }
-}
+/** `T[K]`, for a `T` that TypeScript cannot index while it is generic. */
+type Field<T, K extends string> = T extends Record<K, infer V> ? V : never;
 
-const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
-  const res = await fetch(`${SERVER_URL}/api/${path}`, {
-    credentials: 'include',
-    ...init,
-    headers: { ...(init?.body ? { 'Content-Type': 'application/json' } : {}), ...authHeaders() },
-  });
-  if (!res.ok) throw new HttpError(res.status);
-  return res.status === 204 ? (undefined as T) : res.json();
-};
+/** `label` is the name in errors ("Item"). */
+export const createResource = <E extends CrudEndpoint>(endpoint: E, label: string) => {
+  type Row = InferResponseType<E[':idOrSlug']['$get'], 200>;
+  type Page = InferResponseType<E['$get'], 200>;
+  type ListParams = Field<InferRequestType<E['$get']>, 'query'>;
+  type CreateInput = Field<InferRequestType<E['$post']>, 'json'>;
+  type UpdateInput = Field<InferRequestType<E[':id']['$put']>, 'json'>;
 
-/** `path` is the API segment ("items"). `label` is the name in errors ("Item"). */
-export const createResource = <T extends Row, P extends ListParams = ListParams>(
-  path: string,
-  label: string,
-) => {
+  // The constraint loses the argument types, so give them back here.
+  const call = <R>(fn: Call, args: object) => parseResponse(fn(args as never)) as Promise<R>;
+
   const describe = (err: unknown) =>
-    err instanceof HttpError && err.status === 404
+    err instanceof DetailedError && err.statusCode === 404
       ? `${label} not found`
-      : err instanceof Error
-        ? err.message
-        : `Failed to fetch ${path}`;
+      : errorText(err, `Failed to fetch ${label}`);
 
   const useList = () => {
-    const rows = ref<T[]>([]) as Ref<T[]>;
+    const rows = ref<Row[]>([]) as Ref<Row[]>;
     const total = ref(0);
     const isLoading = ref(false);
     const hasLoaded = ref(false);
     const error = ref('');
-    const params = ref<P>({ page: 1, limit: 20 } as unknown as P);
+    const params = ref({ page: '1', limit: '20' } as ListParams) as Ref<ListParams>;
 
     const fetchAll = async () => {
       isLoading.value = true;
       error.value = '';
       try {
-        const query = new URLSearchParams();
-        for (const [key, value] of Object.entries(params.value)) {
-          if (value !== undefined && value !== '') query.set(key, String(value));
-        }
-        const data = await request<PaginatedResponse<T>>(`${path}?${query}`);
-        rows.value = data.data;
-        total.value = data.total;
+        const page = await call<Page & { data: Row[]; total: number }>(endpoint.$get, {
+          query: params.value,
+        });
+        rows.value = page.data;
+        total.value = page.total;
       } catch (err) {
         error.value = describe(err);
       } finally {
@@ -65,8 +62,14 @@ export const createResource = <T extends Row, P extends ListParams = ListParams>
       }
     };
 
-    const write = async <R>(id: string | null, init: RequestInit) => {
-      const result = await request<R>(id ? `${path}/${id}` : path, init);
+    /** Sends a write, then loads the list again. A failed write throws the server message. */
+    const write = async <R>(run: () => Promise<R>) => {
+      let result: R;
+      try {
+        result = await run();
+      } catch (err) {
+        throw new Error(errorText(err, `Failed to save ${label}`), { cause: err });
+      }
       await fetchAll();
       return result;
     };
@@ -82,26 +85,26 @@ export const createResource = <T extends Row, P extends ListParams = ListParams>
       error,
       params,
       fetchAll,
-      create: (data: WriteInput<T> & Pick<T, 'title'>) =>
-        write<T>(null, { method: 'POST', body: JSON.stringify(data) }),
-      update: (id: string, data: WriteInput<T>) =>
-        write<T>(id, { method: 'PUT', body: JSON.stringify(data) }),
-      remove: (id: string) => write<void>(id, { method: 'DELETE' }),
+      create: (json: CreateInput) => write(() => call<Row>(endpoint.$post, { json })),
+      update: (id: string, json: UpdateInput) =>
+        write(() => call<Row>(endpoint[':id'].$put, { param: { id }, json })),
+      remove: (id: string) =>
+        write(() => call<undefined>(endpoint[':id'].$delete, { param: { id } })),
     };
   };
 
-  const useOne = (slugRef: MaybeRefOrGetter<string>) => {
-    const row = ref<T | null>(null) as Ref<T | null>;
+  const useOne = (idOrSlugRef: MaybeRefOrGetter<string>) => {
+    const row = ref<Row | null>(null) as Ref<Row | null>;
     const isLoading = ref(false);
     const error = ref('');
 
     const fetchOne = async () => {
-      const slug = toValue(slugRef);
-      if (!slug) return;
+      const idOrSlug = toValue(idOrSlugRef);
+      if (!idOrSlug) return;
       isLoading.value = true;
       error.value = '';
       try {
-        row.value = await request<T>(`${path}/${slug}`);
+        row.value = await call<Row>(endpoint[':idOrSlug'].$get, { param: { idOrSlug } });
       } catch (err) {
         error.value = describe(err);
       } finally {
@@ -109,7 +112,7 @@ export const createResource = <T extends Row, P extends ListParams = ListParams>
       }
     };
 
-    watch(() => toValue(slugRef), fetchOne, { immediate: true });
+    watch(() => toValue(idOrSlugRef), fetchOne, { immediate: true });
 
     return { row, isLoading, error, fetchOne };
   };

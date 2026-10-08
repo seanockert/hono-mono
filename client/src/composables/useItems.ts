@@ -1,7 +1,4 @@
-import type { Item, ItemListParams } from 'shared';
+import { api } from '../lib/api';
 import { createResource } from '../lib/resource';
 
-export const { useList: useItems, useOne: useItem } = createResource<Item, ItemListParams>(
-  'items',
-  'Item',
-);
+export const { useList: useItems, useOne: useItem } = createResource(api.items, 'Item');

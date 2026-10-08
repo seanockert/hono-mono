@@ -1,7 +1,8 @@
 import { Hono } from 'hono';
 import type { Context } from 'hono';
 import type { FC } from 'hono/jsx';
-import { listRows, STATUS, uniqueSlug, type CrudDb, type CrudTableName } from '../lib/crud';
+import { STATUS } from 'shared';
+import { listRows, uniqueSlug, type CrudDb, type CrudTableName } from '../lib/crud';
 import { createDb, type CrudTable } from '../lib/db';
 import { getEnv, type AppEnv } from '../lib/env';
 import { uniqueViolation } from '../lib/errors';

@@ -1,18 +1,20 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { HTTPException } from 'hono/http-exception';
+import { logger } from 'hono/logger';
 import { secureHeaders } from 'hono/secure-headers';
 import { sql } from 'kysely';
 import { admin } from './admin';
+import { api } from './api';
 import { createAuth, parseUrlList } from './lib/auth';
 import { createDb } from './lib/db';
 import { fail, uniqueViolation } from './lib/errors';
-import { requireAuth, type AuthVariables } from './lib/middleware';
+import type { AuthVariables } from './lib/middleware';
 import { getEnv, type AppEnv } from './lib/env';
-import items from './routes/items';
-import type { User } from 'shared';
 
 const app = new Hono<{ Bindings: AppEnv; Variables: AuthVariables }>();
+
+app.use('*', logger());
 
 let corsMiddleware: ReturnType<typeof cors> | null = null;
 
@@ -85,15 +87,7 @@ app.get('/health', async (c) => {
 
 app.all('/api/auth/*', (c) => createAuth(getEnv(c.env)).handler(c.req.raw));
 
-app.get('/api/protected', requireAuth, (c) =>
-  c.json({
-    message: 'Auth successful!',
-    user: c.get('session').user as User,
-    timestamp: new Date().toISOString(),
-  }),
-);
-
-app.route('/api/items', items);
+app.route('/api', api);
 
 // Same origin as the API, so the session cookie works without CORS.
 app.route('/admin', admin);

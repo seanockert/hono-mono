@@ -18,12 +18,12 @@ const route = useRoute();
 watchEffect(() => {
   if (isPending.value) return;
 
-  if (session.value && (route.name === 'login' || route.name === 'signup')) {
+  if (session.value && route.meta.guestOnly) {
     router.push({ name: 'dashboard' });
     return;
   }
 
-  if (!session.value && route.name === 'dashboard') {
+  if (!session.value && route.meta.requiresAuth) {
     router.replace({ name: 'login' });
   }
 });

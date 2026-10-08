@@ -2,7 +2,7 @@ export const SERVER_URL = import.meta.env.VITE_SERVER_URL || 'http://localhost:3
 
 export const TOKEN_KEY = 'better-auth.token';
 
-export const authHeaders = (): HeadersInit => {
+export const authHeaders = (): Record<string, string> => {
   const token = localStorage.getItem(TOKEN_KEY);
   return token ? { Authorization: `Bearer ${token}` } : {};
 };

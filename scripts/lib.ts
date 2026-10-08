@@ -96,11 +96,6 @@ export function runMigrate() {
   run(['bun', 'run', 'migrate'], join(root, 'server'), 'Migration');
 }
 
-export function buildShared() {
-  console.log('  Rebuilding shared types...');
-  run(['bun', 'run', 'build'], join(root, 'shared'), 'Shared build');
-}
-
 export function formatFiles(paths: string[]) {
   if (paths.length === 0) return;
   const result = Bun.spawnSync(['bunx', 'oxfmt', ...paths], {

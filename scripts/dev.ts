@@ -9,7 +9,6 @@ if (!existsSync(join(root, 'server/.env')) || !existsSync(join(root, 'server/src
 }
 
 const cmds = [
-  ['bun', 'run', '--filter', 'shared', 'dev'],
   ['bun', 'run', '--filter', 'server', 'dev'],
   ['bun', 'run', '--filter', 'client', 'dev'],
 ];
@@ -39,7 +38,6 @@ async function waitForUrl(url: string, intervalMs = 250, timeoutMs = 30_000) {
 const ready = await waitForUrl('http://localhost:5173');
 
 console.log(`
-  ✓ shared   → watching for changes
   ✓ server   → http://localhost:3000
   ✓ client   → http://localhost:5173
 `);

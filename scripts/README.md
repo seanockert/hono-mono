@@ -4,11 +4,11 @@ Developer tooling scripts. These are not part of the server or client build and 
 
 | File                | Command                                       | Purpose                                                                                                                      |
 | ------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `setup.ts`          | `bun run setup [model] [plural]`              | First-run setup: creates `.env` files, optionally renames the default `item` model, rebuilds shared types, runs migrations   |
-| `generate-model.ts` | `bun run generate <model> [plural] [--force]` | Scaffolds a new CRUD model from `templates/`, then patches `db.ts`, `index.ts`, the shared types barrel, and `router.ts`     |
-| `dev.ts`            | `bun run dev`                                 | Starts all three dev servers (shared, server, client) in parallel and opens the browser                                      |
+| `setup.ts`          | `bun run setup [model] [plural]`              | First-run setup: creates `.env` files, optionally renames the default `item` model, runs migrations                          |
+| `generate-model.ts` | `bun run generate <model> [plural] [--force]` | Scaffolds a new CRUD model from `templates/`, then patches `db.ts`, `models.ts`, `api.ts`, and `router.ts`                   |
+| `dev.ts`            | `bun run dev`                                 | Starts the server and client dev servers in parallel and opens the browser                                                   |
 | `deploy-setup.ts`   | `bun run deploy:setup <appName>`              | One-time Cloudflare deployment setup: creates a D1 database, generates `wrangler.toml`, sets secrets, runs remote migrations |
-| `lib.ts`            | -                                             | Shared helpers (`resolveModel`, `nextMigrationNumber`, `runMigrate`, `buildShared`, `root`)                                  |
+| `lib.ts`            | -                                             | Shared helpers (`resolveModel`, `nextMigrationNumber`, `runMigrate`, `formatFiles`, `root`)                                  |
 
 ## templates/
 

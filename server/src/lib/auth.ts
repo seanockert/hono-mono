@@ -52,7 +52,11 @@ async function verifyPassword({
 }
 
 export const authConfig = {
-  emailAndPassword: { enabled: true, password: { hash: hashPassword, verify: verifyPassword } },
+  emailAndPassword: {
+    enabled: true,
+    password: { hash: hashPassword, verify: verifyPassword },
+    revokeSessionsOnPasswordReset: true,
+  },
   plugins: [admin(), bearer()],
   // Database, not memory, because each Workers isolate has its own memory.
   rateLimit: {
@@ -70,6 +74,8 @@ export const authConfig = {
   // Removes one D1 query from each getSession. If the cookie is blocked, reads the database.
   session: { cookieCache: { enabled: true, maxAge: 300 } },
   user: {
+    // The user must give their password again to delete the account.
+    deleteUser: { enabled: true },
     additionalFields: {
       role: {
         type: 'string' as const,

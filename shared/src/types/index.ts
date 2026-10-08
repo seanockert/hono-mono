@@ -11,12 +11,7 @@ export interface User {
   updatedAt?: Date;
 }
 
-export type PaginatedResponse<T> = {
-  data: T[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-};
+/** The publication states of a CRUD row. */
+export const STATUS = ['draft', 'published', 'archived'] as const;
 
-export * from './item';
+export type Status = (typeof STATUS)[number];

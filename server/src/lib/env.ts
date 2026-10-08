@@ -7,6 +7,8 @@ export type AppEnv = {
   GITHUB_CLIENT_ID?: string;
   GITHUB_CLIENT_SECRET?: string;
   RESEND_API_KEY?: string;
+  /** Cloudflare rate limit binding. Not set on Bun. */
+  WRITE_LIMITER?: { limit(options: { key: string }): Promise<{ success: boolean }> };
 };
 
 const ENV_KEYS = [
