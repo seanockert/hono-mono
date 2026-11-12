@@ -51,6 +51,15 @@ bun run deploy:setup
 bun run deploy
 ```
 
+### Custom domains
+
+On the default domains, the client (`*.pages.dev`) and the API (`*.workers.dev`) are on different sites.
+Many browsers block the session cookie between sites, so the client also sends a bearer token from `localStorage`.
+
+Put the client and the API on one site, for example `app.example.com` and `api.example.com`.
+Then the browser sends the session cookie, and the client does not need the bearer token.
+Add the client domain to `CLIENT_URLS`, and set `BETTER_AUTH_URL` to the API domain.
+
 ## Adding a New Model
 
 You can quickly scaffold a new CRUD model (routes, migration, Vue composable and pages) with:

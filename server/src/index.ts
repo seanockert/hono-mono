@@ -26,11 +26,9 @@ app.use('*', async (c, next) => {
       ...parseUrlList(env.CLIENT_URLS),
     ];
 
+    // Only the listed origins. With no list, no origin is allowed.
     corsMiddleware = cors({
-      origin: (origin) => {
-        if (origins.length === 0) return origin || '*';
-        return origins.includes(origin) ? origin : '';
-      },
+      origin: origins,
       credentials: true,
       allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
       allowHeaders: ['Content-Type', 'Authorization'],

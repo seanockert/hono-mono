@@ -5,7 +5,7 @@ import { createMiddleware } from 'hono/factory';
 import { NONCE, secureHeaders } from 'hono/secure-headers';
 import { createAuth } from '../lib/auth';
 import { getEnv, type AppEnv } from '../lib/env';
-import type { AuthVariables } from '../lib/middleware';
+import { getSession, type AuthVariables } from '../lib/middleware';
 import { ADMIN_MODELS } from '../lib/models';
 import { notFoundPage, page } from './layout';
 import { records } from './records';
@@ -41,11 +41,7 @@ const loginPage = (c: Context<Env>, notice?: string) =>
 
 /** Not `requireAuth`, which sends a JSON 401. A browser needs an HTML page. */
 const requireAdmin = createMiddleware<Env>(async (c, next) => {
-  // No cookie cache, so that a ban or a role change applies at once.
-  const session = await createAuth(getEnv(c.env)).api.getSession({
-    headers: c.req.raw.headers,
-    query: { disableCookieCache: true },
-  });
+  const session = await getSession(c);
 
   if (!session) {
     c.status(401);

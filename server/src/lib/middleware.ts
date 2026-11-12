@@ -1,3 +1,4 @@
+import type { Context } from 'hono';
 import { createMiddleware } from 'hono/factory';
 import { createAuth } from './auth';
 import { fail } from './errors';
@@ -9,9 +10,18 @@ export type AuthVariables = { session: Session };
 
 type Env = { Bindings: AppEnv; Variables: AuthVariables };
 
+/**
+ * Reads the session from the database, not from the cookie cache, so that a ban or a
+ * role change applies at once. Use it for all access checks on the server.
+ */
+export const getSession = (c: Context<Env>) =>
+  createAuth(getEnv(c.env)).api.getSession({
+    headers: c.req.raw.headers,
+    query: { disableCookieCache: true },
+  });
+
 export const requireAuth = createMiddleware<Env>(async (c, next) => {
-  const auth = createAuth(getEnv(c.env));
-  const session = await auth.api.getSession({ headers: c.req.raw.headers });
+  const session = await getSession(c);
 
   if (!session) {
     return c.json({ error: 'Unauthorised' }, 401);

@@ -11,22 +11,29 @@ type Env = { Bindings: AppEnv; Variables: AuthVariables };
 
 const auth = (c: Context<Env>) => createAuth(getEnv(c.env));
 
-const backWithError = (c: Context<Env>, message: string) =>
-  c.redirect(`/admin/users?error=${encodeURIComponent(message)}`, 303);
+// The URL has a code, not a message. Then a link cannot show its own text on this page.
+const NOTICES = {
+  self: 'That action cannot target your own account.',
+  failed: 'That action failed. The server log has the reason.',
+} as const;
+
+const backWithError = (c: Context<Env>, code: keyof typeof NOTICES) =>
+  c.redirect(`/admin/users?error=${code}`, 303);
 
 // Refuses actions on the account of the caller. Better Auth allows them, and the
 // list only hides the buttons. Without this check, an admin can delete their own account.
 const act = async (c: Context<Env>, run: (userId: string) => Promise<unknown>) => {
   const userId = c.req.param('id') ?? '';
   if (userId === c.get('session').user.id) {
-    return backWithError(c, 'That action cannot target your own account.');
+    return backWithError(c, 'self');
   }
 
   try {
     await run(userId);
     return c.redirect('/admin/users', 303);
   } catch (error) {
-    return backWithError(c, error instanceof Error ? error.message : 'That action failed');
+    console.error('Admin user action failed:', error);
+    return backWithError(c, 'failed');
   }
 };
 
@@ -35,7 +42,8 @@ export const users = new Hono<Env>();
 users.get('/users', async (c) => {
   const search = c.req.query('search') ?? '';
   const current = Math.max(1, Number(c.req.query('page')) || 1);
-  const notice = c.req.query('error') ?? '';
+  const code = c.req.query('error');
+  const notice = code && Object.hasOwn(NOTICES, code) ? NOTICES[code as keyof typeof NOTICES] : '';
   const me = c.get('session').user;
 
   const result = await auth(c).api.listUsers({

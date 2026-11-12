@@ -4,10 +4,15 @@ import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
 import { sql, type Expression, type ExpressionBuilder, type Kysely, type SqlBool } from 'kysely';
 import { STATUS } from 'shared';
-import { createAuth } from './auth';
 import { createDb, type AppDatabase, type CrudTable } from './db';
 import { fail } from './errors';
-import { limitWrites, requireAuth, type AuthVariables, type Session } from './middleware';
+import {
+  getSession,
+  limitWrites,
+  requireAuth,
+  type AuthVariables,
+  type Session,
+} from './middleware';
 import { getEnv, type AppEnv } from './env';
 import { slugify, UUID_REGEX } from './utils';
 
@@ -122,8 +127,7 @@ const readable = (user?: User): Filter | undefined => {
       : eb('status', '=', 'published');
 };
 
-const viewer = async (c: Context<Env>) =>
-  (await createAuth(getEnv(c.env)).api.getSession({ headers: c.req.raw.headers }))?.user;
+const viewer = async (c: Context<Env>) => (await getSession(c))?.user;
 
 /** Limits a write to rows of the caller. Admins can write all rows. */
 const restrict = <T extends Restrictable<T>>(query: T, id: string, user: User): T => {

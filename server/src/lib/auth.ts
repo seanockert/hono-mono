@@ -71,7 +71,8 @@ export const authConfig = {
       '/request-password-reset': { window: 300, max: 3 },
     },
   },
-  // Removes one D1 query from each getSession. If the cookie is blocked, reads the database.
+  // Removes one D1 query from each get-session call of the client. Server access
+  // checks do not use it. See getSession in middleware.ts.
   session: { cookieCache: { enabled: true, maxAge: 300 } },
   user: {
     // The user must give their password again to delete the account.
